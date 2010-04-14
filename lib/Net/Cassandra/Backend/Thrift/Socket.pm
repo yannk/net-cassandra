@@ -274,7 +274,7 @@ sub flush
 #
 package  Net::Cassandra::Backend::Thrift::ServerSocket;
 
-use base qw( Net::Cassandra::Backend::Thrift::Socket Net::Cassandra::Backend::Thrift::ServerTransport );
+use base qw( Thrift::Socket Thrift::ServerTransport );
 
 use constant LISTEN_QUEUE_SIZE => 128;
 
