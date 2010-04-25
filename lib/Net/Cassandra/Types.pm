@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use Net::Cassandra::Backend::Thrift;
 
-package Net::Cassandra::BackendConsistencyLevel;
+package Net::Cassandra::Backend::ConsistencyLevel;
 use constant ZERO => 0;
 use constant ONE => 1;
 use constant QUORUM => 2;
@@ -16,14 +16,14 @@ use constant DCQUORUM => 3;
 use constant DCQUORUMSYNC => 4;
 use constant ALL => 5;
 use constant ANY => 6;
-package Net::Cassandra::BackendAccessLevel;
+package Net::Cassandra::Backend::AccessLevel;
 use constant NONE => 0;
 use constant READONLY => 16;
 use constant READWRITE => 32;
 use constant FULL => 64;
-package Net::Cassandra::BackendColumn;
+package Net::Cassandra::Backend::Column;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendColumn->mk_accessors( qw( name value timestamp ) );
+Net::Cassandra::Backend::Column->mk_accessors( qw( name value timestamp ) );
 
 sub new {
   my $classname = shift;
@@ -115,9 +115,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendSuperColumn;
+package Net::Cassandra::Backend::SuperColumn;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendSuperColumn->mk_accessors( qw( name columns ) );
+Net::Cassandra::Backend::SuperColumn->mk_accessors( qw( name columns ) );
 
 sub new {
   my $classname = shift;
@@ -170,7 +170,7 @@ sub read {
           for (my $_i4 = 0; $_i4 < $_size0; ++$_i4)
           {
             my $elem5 = undef;
-            $elem5 = new Net::Cassandra::BackendColumn();
+            $elem5 = new Net::Cassandra::Backend::Column();
             $xfer += $elem5->read($input);
             push(@{$self->{columns}},$elem5);
           }
@@ -216,9 +216,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendColumnOrSuperColumn;
+package Net::Cassandra::Backend::ColumnOrSuperColumn;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendColumnOrSuperColumn->mk_accessors( qw( column super_column ) );
+Net::Cassandra::Backend::ColumnOrSuperColumn->mk_accessors( qw( column super_column ) );
 
 sub new {
   my $classname = shift;
@@ -257,14 +257,14 @@ sub read {
     SWITCH: for($fid)
     {
       /^1$/ && do{      if ($ftype == TType::STRUCT) {
-        $self->{column} = new Net::Cassandra::BackendColumn();
+        $self->{column} = new Net::Cassandra::Backend::Column();
         $xfer += $self->{column}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
       /^2$/ && do{      if ($ftype == TType::STRUCT) {
-        $self->{super_column} = new Net::Cassandra::BackendSuperColumn();
+        $self->{super_column} = new Net::Cassandra::Backend::SuperColumn();
         $xfer += $self->{super_column}->read($input);
       } else {
         $xfer += $input->skip($ftype);
@@ -297,7 +297,7 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendNotFoundException;
+package Net::Cassandra::Backend::NotFoundException;
 use base qw(Net::Cassandra::Backend::Thrift::TException);
 use base qw(Class::Accessor);
 
@@ -344,10 +344,10 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendInvalidRequestException;
+package Net::Cassandra::Backend::InvalidRequestException;
 use base qw(Net::Cassandra::Backend::Thrift::TException);
 use base qw(Class::Accessor);
-Net::Cassandra::BackendInvalidRequestException->mk_accessors( qw( why ) );
+Net::Cassandra::Backend::InvalidRequestException->mk_accessors( qw( why ) );
 
 sub new {
   my $classname = shift;
@@ -409,7 +409,7 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendUnavailableException;
+package Net::Cassandra::Backend::UnavailableException;
 use base qw(Net::Cassandra::Backend::Thrift::TException);
 use base qw(Class::Accessor);
 
@@ -456,7 +456,7 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendTimedOutException;
+package Net::Cassandra::Backend::TimedOutException;
 use base qw(Net::Cassandra::Backend::Thrift::TException);
 use base qw(Class::Accessor);
 
@@ -503,10 +503,10 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendAuthenticationException;
+package Net::Cassandra::Backend::AuthenticationException;
 use base qw(Net::Cassandra::Backend::Thrift::TException);
 use base qw(Class::Accessor);
-Net::Cassandra::BackendAuthenticationException->mk_accessors( qw( why ) );
+Net::Cassandra::Backend::AuthenticationException->mk_accessors( qw( why ) );
 
 sub new {
   my $classname = shift;
@@ -568,10 +568,10 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendAuthorizationException;
+package Net::Cassandra::Backend::AuthorizationException;
 use base qw(Net::Cassandra::Backend::Thrift::TException);
 use base qw(Class::Accessor);
-Net::Cassandra::BackendAuthorizationException->mk_accessors( qw( why ) );
+Net::Cassandra::Backend::AuthorizationException->mk_accessors( qw( why ) );
 
 sub new {
   my $classname = shift;
@@ -633,9 +633,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendColumnParent;
+package Net::Cassandra::Backend::ColumnParent;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendColumnParent->mk_accessors( qw( column_family super_column ) );
+Net::Cassandra::Backend::ColumnParent->mk_accessors( qw( column_family super_column ) );
 
 sub new {
   my $classname = shift;
@@ -712,9 +712,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendColumnPath;
+package Net::Cassandra::Backend::ColumnPath;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendColumnPath->mk_accessors( qw( column_family super_column column ) );
+Net::Cassandra::Backend::ColumnPath->mk_accessors( qw( column_family super_column column ) );
 
 sub new {
   my $classname = shift;
@@ -806,9 +806,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendSliceRange;
+package Net::Cassandra::Backend::SliceRange;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendSliceRange->mk_accessors( qw( start finish reversed count bitmasks ) );
+Net::Cassandra::Backend::SliceRange->mk_accessors( qw( start finish reversed count bitmasks ) );
 
 sub new {
   my $classname = shift;
@@ -951,9 +951,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendSlicePredicate;
+package Net::Cassandra::Backend::SlicePredicate;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendSlicePredicate->mk_accessors( qw( column_names slice_range ) );
+Net::Cassandra::Backend::SlicePredicate->mk_accessors( qw( column_names slice_range ) );
 
 sub new {
   my $classname = shift;
@@ -1010,7 +1010,7 @@ sub read {
       }
       last; };
       /^2$/ && do{      if ($ftype == TType::STRUCT) {
-        $self->{slice_range} = new Net::Cassandra::BackendSliceRange();
+        $self->{slice_range} = new Net::Cassandra::Backend::SliceRange();
         $xfer += $self->{slice_range}->read($input);
       } else {
         $xfer += $input->skip($ftype);
@@ -1052,9 +1052,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendKeyRange;
+package Net::Cassandra::Backend::KeyRange;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendKeyRange->mk_accessors( qw( start_key end_key start_token end_token count ) );
+Net::Cassandra::Backend::KeyRange->mk_accessors( qw( start_key end_key start_token end_token count ) );
 
 sub new {
   my $classname = shift;
@@ -1176,9 +1176,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendKeySlice;
+package Net::Cassandra::Backend::KeySlice;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendKeySlice->mk_accessors( qw( key columns ) );
+Net::Cassandra::Backend::KeySlice->mk_accessors( qw( key columns ) );
 
 sub new {
   my $classname = shift;
@@ -1231,7 +1231,7 @@ sub read {
           for (my $_i25 = 0; $_i25 < $_size21; ++$_i25)
           {
             my $elem26 = undef;
-            $elem26 = new Net::Cassandra::BackendColumnOrSuperColumn();
+            $elem26 = new Net::Cassandra::Backend::ColumnOrSuperColumn();
             $xfer += $elem26->read($input);
             push(@{$self->{columns}},$elem26);
           }
@@ -1277,9 +1277,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendDeletion;
+package Net::Cassandra::Backend::Deletion;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendDeletion->mk_accessors( qw( timestamp super_column predicate ) );
+Net::Cassandra::Backend::Deletion->mk_accessors( qw( timestamp super_column predicate ) );
 
 sub new {
   my $classname = shift;
@@ -1334,7 +1334,7 @@ sub read {
       }
       last; };
       /^3$/ && do{      if ($ftype == TType::STRUCT) {
-        $self->{predicate} = new Net::Cassandra::BackendSlicePredicate();
+        $self->{predicate} = new Net::Cassandra::Backend::SlicePredicate();
         $xfer += $self->{predicate}->read($input);
       } else {
         $xfer += $input->skip($ftype);
@@ -1372,9 +1372,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendMutation;
+package Net::Cassandra::Backend::Mutation;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendMutation->mk_accessors( qw( column_or_supercolumn deletion ) );
+Net::Cassandra::Backend::Mutation->mk_accessors( qw( column_or_supercolumn deletion ) );
 
 sub new {
   my $classname = shift;
@@ -1413,14 +1413,14 @@ sub read {
     SWITCH: for($fid)
     {
       /^1$/ && do{      if ($ftype == TType::STRUCT) {
-        $self->{column_or_supercolumn} = new Net::Cassandra::BackendColumnOrSuperColumn();
+        $self->{column_or_supercolumn} = new Net::Cassandra::Backend::ColumnOrSuperColumn();
         $xfer += $self->{column_or_supercolumn}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
       /^2$/ && do{      if ($ftype == TType::STRUCT) {
-        $self->{deletion} = new Net::Cassandra::BackendDeletion();
+        $self->{deletion} = new Net::Cassandra::Backend::Deletion();
         $xfer += $self->{deletion}->read($input);
       } else {
         $xfer += $input->skip($ftype);
@@ -1453,9 +1453,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendTokenRange;
+package Net::Cassandra::Backend::TokenRange;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendTokenRange->mk_accessors( qw( start_token end_token endpoints ) );
+Net::Cassandra::Backend::TokenRange->mk_accessors( qw( start_token end_token endpoints ) );
 
 sub new {
   my $classname = shift;
@@ -1568,9 +1568,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendAuthenticationRequest;
+package Net::Cassandra::Backend::AuthenticationRequest;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendAuthenticationRequest->mk_accessors( qw( credentials ) );
+Net::Cassandra::Backend::AuthenticationRequest->mk_accessors( qw( credentials ) );
 
 sub new {
   my $classname = shift;
@@ -1657,9 +1657,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendCfDef;
+package Net::Cassandra::Backend::CfDef;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendCfDef->mk_accessors( qw( table name column_type comparator_type subcomparator_type comment row_cache_size key_cache_size ) );
+Net::Cassandra::Backend::CfDef->mk_accessors( qw( table name column_type comparator_type subcomparator_type comment row_cache_size key_cache_size ) );
 
 sub new {
   my $classname = shift;
@@ -1826,9 +1826,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::BackendKsDef;
+package Net::Cassandra::Backend::KsDef;
 use base qw(Class::Accessor);
-Net::Cassandra::BackendKsDef->mk_accessors( qw( name strategy_class replication_factor snitch_class cf_defs ) );
+Net::Cassandra::Backend::KsDef->mk_accessors( qw( name strategy_class replication_factor snitch_class cf_defs ) );
 
 sub new {
   my $classname = shift;
@@ -1911,7 +1911,7 @@ sub read {
           for (my $_i48 = 0; $_i48 < $_size44; ++$_i48)
           {
             my $elem49 = undef;
-            $elem49 = new Net::Cassandra::BackendCfDef();
+            $elem49 = new Net::Cassandra::Backend::CfDef();
             $xfer += $elem49->read($input);
             push(@{$self->{cf_defs}},$elem49);
           }
