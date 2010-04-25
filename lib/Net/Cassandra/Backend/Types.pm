@@ -16,6 +16,11 @@ use constant DCQUORUM => 3;
 use constant DCQUORUMSYNC => 4;
 use constant ALL => 5;
 use constant ANY => 6;
+package Net::Cassandra::Backend::AccessLevel;
+use constant NONE => 0;
+use constant READONLY => 16;
+use constant READWRITE => 32;
+use constant FULL => 64;
 package Net::Cassandra::Backend::Column;
 use base qw(Class::Accessor);
 Net::Cassandra::Backend::Column->mk_accessors( qw( name value timestamp ) );
@@ -803,7 +808,7 @@ sub write {
 
 package Net::Cassandra::Backend::SliceRange;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::SliceRange->mk_accessors( qw( start finish reversed count ) );
+Net::Cassandra::Backend::SliceRange->mk_accessors( qw( start finish reversed count bitmasks ) );
 
 sub new {
   my $classname = shift;
@@ -813,6 +818,7 @@ sub new {
   $self->{finish} = undef;
   $self->{reversed} = 0;
   $self->{count} = 100;
+  $self->{bitmasks} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
     if (defined $vals->{start}) {
       $self->{start} = $vals->{start};
@@ -825,6 +831,9 @@ sub new {
     }
     if (defined $vals->{count}) {
       $self->{count} = $vals->{count};
+    }
+    if (defined $vals->{bitmasks}) {
+      $self->{bitmasks} = $vals->{bitmasks};
     }
   }
   return bless ($self, $classname);
@@ -873,6 +882,24 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
+      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
+        {
+          my $_size7 = 0;
+          $self->{bitmasks} = [];
+          my $_etype10 = 0;
+          $xfer += $input->readListBegin(\$_etype10, \$_size7);
+          for (my $_i11 = 0; $_i11 < $_size7; ++$_i11)
+          {
+            my $elem12 = undef;
+            $xfer += $input->readString(\$elem12);
+            push(@{$self->{bitmasks}},$elem12);
+          }
+          $xfer += $input->readListEnd();
+        }
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
         $xfer += $input->skip($ftype);
     }
     $xfer += $input->readFieldEnd();
@@ -903,6 +930,20 @@ sub write {
   if (defined $self->{count}) {
     $xfer += $output->writeFieldBegin('count', Net::Cassandra::Backend::TType::I32, 4);
     $xfer += $output->writeI32($self->{count});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{bitmasks}) {
+    $xfer += $output->writeFieldBegin('bitmasks', Net::Cassandra::Backend::TType::LIST, 5);
+    {
+      $output->writeListBegin(Net::Cassandra::Backend::TType::STRING, scalar(@{$self->{bitmasks}}));
+      {
+        foreach my $iter13 (@{$self->{bitmasks}}) 
+        {
+          $xfer += $output->writeString($iter13);
+        }
+      }
+      $output->writeListEnd();
+    }
     $xfer += $output->writeFieldEnd();
   }
   $xfer += $output->writeFieldStop();
@@ -952,15 +993,15 @@ sub read {
     {
       /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
         {
-          my $_size7 = 0;
+          my $_size14 = 0;
           $self->{column_names} = [];
-          my $_etype10 = 0;
-          $xfer += $input->readListBegin(\$_etype10, \$_size7);
-          for (my $_i11 = 0; $_i11 < $_size7; ++$_i11)
+          my $_etype17 = 0;
+          $xfer += $input->readListBegin(\$_etype17, \$_size14);
+          for (my $_i18 = 0; $_i18 < $_size14; ++$_i18)
           {
-            my $elem12 = undef;
-            $xfer += $input->readString(\$elem12);
-            push(@{$self->{column_names}},$elem12);
+            my $elem19 = undef;
+            $xfer += $input->readString(\$elem19);
+            push(@{$self->{column_names}},$elem19);
           }
           $xfer += $input->readListEnd();
         }
@@ -992,9 +1033,9 @@ sub write {
     {
       $output->writeListBegin(Net::Cassandra::Backend::TType::STRING, scalar(@{$self->{column_names}}));
       {
-        foreach my $iter13 (@{$self->{column_names}}) 
+        foreach my $iter20 (@{$self->{column_names}}) 
         {
-          $xfer += $output->writeString($iter13);
+          $xfer += $output->writeString($iter20);
         }
       }
       $output->writeListEnd();
@@ -1183,16 +1224,16 @@ sub read {
       last; };
       /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
         {
-          my $_size14 = 0;
+          my $_size21 = 0;
           $self->{columns} = [];
-          my $_etype17 = 0;
-          $xfer += $input->readListBegin(\$_etype17, \$_size14);
-          for (my $_i18 = 0; $_i18 < $_size14; ++$_i18)
+          my $_etype24 = 0;
+          $xfer += $input->readListBegin(\$_etype24, \$_size21);
+          for (my $_i25 = 0; $_i25 < $_size21; ++$_i25)
           {
-            my $elem19 = undef;
-            $elem19 = new Net::Cassandra::Backend::ColumnOrSuperColumn();
-            $xfer += $elem19->read($input);
-            push(@{$self->{columns}},$elem19);
+            my $elem26 = undef;
+            $elem26 = new Net::Cassandra::Backend::ColumnOrSuperColumn();
+            $xfer += $elem26->read($input);
+            push(@{$self->{columns}},$elem26);
           }
           $xfer += $input->readListEnd();
         }
@@ -1222,9 +1263,9 @@ sub write {
     {
       $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{$self->{columns}}));
       {
-        foreach my $iter20 (@{$self->{columns}}) 
+        foreach my $iter27 (@{$self->{columns}}) 
         {
-          $xfer += ${iter20}->write($output);
+          $xfer += ${iter27}->write($output);
         }
       }
       $output->writeListEnd();
@@ -1470,15 +1511,15 @@ sub read {
       last; };
       /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
         {
-          my $_size21 = 0;
+          my $_size28 = 0;
           $self->{endpoints} = [];
-          my $_etype24 = 0;
-          $xfer += $input->readListBegin(\$_etype24, \$_size21);
-          for (my $_i25 = 0; $_i25 < $_size21; ++$_i25)
+          my $_etype31 = 0;
+          $xfer += $input->readListBegin(\$_etype31, \$_size28);
+          for (my $_i32 = 0; $_i32 < $_size28; ++$_i32)
           {
-            my $elem26 = undef;
-            $xfer += $input->readString(\$elem26);
-            push(@{$self->{endpoints}},$elem26);
+            my $elem33 = undef;
+            $xfer += $input->readString(\$elem33);
+            push(@{$self->{endpoints}},$elem33);
           }
           $xfer += $input->readListEnd();
         }
@@ -1513,9 +1554,9 @@ sub write {
     {
       $output->writeListBegin(Net::Cassandra::Backend::TType::STRING, scalar(@{$self->{endpoints}}));
       {
-        foreach my $iter27 (@{$self->{endpoints}}) 
+        foreach my $iter34 (@{$self->{endpoints}}) 
         {
-          $xfer += $output->writeString($iter27);
+          $xfer += $output->writeString($iter34);
         }
       }
       $output->writeListEnd();
@@ -1565,18 +1606,18 @@ sub read {
     {
       /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::MAP) {
         {
-          my $_size28 = 0;
+          my $_size35 = 0;
           $self->{credentials} = {};
-          my $_ktype29 = 0;
-          my $_vtype30 = 0;
-          $xfer += $input->readMapBegin(\$_ktype29, \$_vtype30, \$_size28);
-          for (my $_i32 = 0; $_i32 < $_size28; ++$_i32)
+          my $_ktype36 = 0;
+          my $_vtype37 = 0;
+          $xfer += $input->readMapBegin(\$_ktype36, \$_vtype37, \$_size35);
+          for (my $_i39 = 0; $_i39 < $_size35; ++$_i39)
           {
-            my $key33 = '';
-            my $val34 = '';
-            $xfer += $input->readString(\$key33);
-            $xfer += $input->readString(\$val34);
-            $self->{credentials}->{$key33} = $val34;
+            my $key40 = '';
+            my $val41 = '';
+            $xfer += $input->readString(\$key40);
+            $xfer += $input->readString(\$val41);
+            $self->{credentials}->{$key40} = $val41;
           }
           $xfer += $input->readMapEnd();
         }
@@ -1601,13 +1642,328 @@ sub write {
     {
       $output->writeMapBegin(Net::Cassandra::Backend::TType::STRING, Net::Cassandra::Backend::TType::STRING, scalar(keys %{$self->{credentials}}));
       {
-        while( my ($kiter35,$viter36) = each %{$self->{credentials}}) 
+        while( my ($kiter42,$viter43) = each %{$self->{credentials}}) 
         {
-          $xfer += $output->writeString($kiter35);
-          $xfer += $output->writeString($viter36);
+          $xfer += $output->writeString($kiter42);
+          $xfer += $output->writeString($viter43);
         }
       }
       $output->writeMapEnd();
+    }
+    $xfer += $output->writeFieldEnd();
+  }
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
+package Net::Cassandra::Backend::CfDef;
+use base qw(Class::Accessor);
+Net::Cassandra::Backend::CfDef->mk_accessors( qw( table name column_type comparator_type subcomparator_type comment row_cache_size key_cache_size ) );
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  $self->{table} = undef;
+  $self->{name} = undef;
+  $self->{column_type} = "Standard";
+  $self->{comparator_type} = "BytesType";
+  $self->{subcomparator_type} = "";
+  $self->{comment} = "";
+  $self->{row_cache_size} = 0;
+  $self->{key_cache_size} = 200000;
+  if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{table}) {
+      $self->{table} = $vals->{table};
+    }
+    if (defined $vals->{name}) {
+      $self->{name} = $vals->{name};
+    }
+    if (defined $vals->{column_type}) {
+      $self->{column_type} = $vals->{column_type};
+    }
+    if (defined $vals->{comparator_type}) {
+      $self->{comparator_type} = $vals->{comparator_type};
+    }
+    if (defined $vals->{subcomparator_type}) {
+      $self->{subcomparator_type} = $vals->{subcomparator_type};
+    }
+    if (defined $vals->{comment}) {
+      $self->{comment} = $vals->{comment};
+    }
+    if (defined $vals->{row_cache_size}) {
+      $self->{row_cache_size} = $vals->{row_cache_size};
+    }
+    if (defined $vals->{key_cache_size}) {
+      $self->{key_cache_size} = $vals->{key_cache_size};
+    }
+  }
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'CfDef';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{table});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{name});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{column_type});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{comparator_type});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{subcomparator_type});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^6$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{comment});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^7$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::DOUBLE) {
+        $xfer += $input->readDouble(\$self->{row_cache_size});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^8$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::DOUBLE) {
+        $xfer += $input->readDouble(\$self->{key_cache_size});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('CfDef');
+  if (defined $self->{table}) {
+    $xfer += $output->writeFieldBegin('table', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeString($self->{table});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{name}) {
+    $xfer += $output->writeFieldBegin('name', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeString($self->{name});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{column_type}) {
+    $xfer += $output->writeFieldBegin('column_type', Net::Cassandra::Backend::TType::STRING, 3);
+    $xfer += $output->writeString($self->{column_type});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{comparator_type}) {
+    $xfer += $output->writeFieldBegin('comparator_type', Net::Cassandra::Backend::TType::STRING, 4);
+    $xfer += $output->writeString($self->{comparator_type});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{subcomparator_type}) {
+    $xfer += $output->writeFieldBegin('subcomparator_type', Net::Cassandra::Backend::TType::STRING, 5);
+    $xfer += $output->writeString($self->{subcomparator_type});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{comment}) {
+    $xfer += $output->writeFieldBegin('comment', Net::Cassandra::Backend::TType::STRING, 6);
+    $xfer += $output->writeString($self->{comment});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{row_cache_size}) {
+    $xfer += $output->writeFieldBegin('row_cache_size', Net::Cassandra::Backend::TType::DOUBLE, 7);
+    $xfer += $output->writeDouble($self->{row_cache_size});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{key_cache_size}) {
+    $xfer += $output->writeFieldBegin('key_cache_size', Net::Cassandra::Backend::TType::DOUBLE, 8);
+    $xfer += $output->writeDouble($self->{key_cache_size});
+    $xfer += $output->writeFieldEnd();
+  }
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
+package Net::Cassandra::Backend::KsDef;
+use base qw(Class::Accessor);
+Net::Cassandra::Backend::KsDef->mk_accessors( qw( name strategy_class replication_factor snitch_class cf_defs ) );
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  $self->{name} = undef;
+  $self->{strategy_class} = undef;
+  $self->{replication_factor} = undef;
+  $self->{snitch_class} = undef;
+  $self->{cf_defs} = undef;
+  if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{name}) {
+      $self->{name} = $vals->{name};
+    }
+    if (defined $vals->{strategy_class}) {
+      $self->{strategy_class} = $vals->{strategy_class};
+    }
+    if (defined $vals->{replication_factor}) {
+      $self->{replication_factor} = $vals->{replication_factor};
+    }
+    if (defined $vals->{snitch_class}) {
+      $self->{snitch_class} = $vals->{snitch_class};
+    }
+    if (defined $vals->{cf_defs}) {
+      $self->{cf_defs} = $vals->{cf_defs};
+    }
+  }
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'KsDef';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{name});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{strategy_class});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+        $xfer += $input->readI32(\$self->{replication_factor});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+        $xfer += $input->readString(\$self->{snitch_class});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
+        {
+          my $_size44 = 0;
+          $self->{cf_defs} = [];
+          my $_etype47 = 0;
+          $xfer += $input->readListBegin(\$_etype47, \$_size44);
+          for (my $_i48 = 0; $_i48 < $_size44; ++$_i48)
+          {
+            my $elem49 = undef;
+            $elem49 = new Net::Cassandra::Backend::CfDef();
+            $xfer += $elem49->read($input);
+            push(@{$self->{cf_defs}},$elem49);
+          }
+          $xfer += $input->readListEnd();
+        }
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('KsDef');
+  if (defined $self->{name}) {
+    $xfer += $output->writeFieldBegin('name', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeString($self->{name});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{strategy_class}) {
+    $xfer += $output->writeFieldBegin('strategy_class', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeString($self->{strategy_class});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{replication_factor}) {
+    $xfer += $output->writeFieldBegin('replication_factor', Net::Cassandra::Backend::TType::I32, 3);
+    $xfer += $output->writeI32($self->{replication_factor});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{snitch_class}) {
+    $xfer += $output->writeFieldBegin('snitch_class', Net::Cassandra::Backend::TType::STRING, 4);
+    $xfer += $output->writeString($self->{snitch_class});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{cf_defs}) {
+    $xfer += $output->writeFieldBegin('cf_defs', Net::Cassandra::Backend::TType::LIST, 5);
+    {
+      $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{$self->{cf_defs}}));
+      {
+        foreach my $iter50 (@{$self->{cf_defs}}) 
+        {
+          $xfer += ${iter50}->write($output);
+        }
+      }
+      $output->writeListEnd();
     }
     $xfer += $output->writeFieldEnd();
   }

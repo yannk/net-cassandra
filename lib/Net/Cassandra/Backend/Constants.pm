@@ -10,6 +10,6 @@ use warnings;
 use Net::Cassandra::Backend::Thrift;
 
 
-use constant VERSION => "2.1.0";
+use constant VERSION => "3.0.0";
 
 1;
