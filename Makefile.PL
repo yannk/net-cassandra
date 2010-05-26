@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 my $interface = '/usr/share/cassandra/cassandra.thrift';
 if (-f $interface) {
     print "Using $interface to mangle namespaces\n";
-    system('mangle-thrift.pl', $interface);
+    system('perl', 'mangle-thrift.pl', $interface);
 }
 else {
     print "Missing $interface this will probably fail somewhere :)\n";
