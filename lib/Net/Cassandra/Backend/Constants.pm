@@ -7,9 +7,9 @@ package Net::Cassandra::Backend::Constants;
 require 5.6.0;
 use strict;
 use warnings;
-use Net::Cassandra::Backend::Thrift;
+use Thrift;
 
 
-use constant VERSION => "3.0.0";
+use constant VERSION => "6.1.0";
 
 1;

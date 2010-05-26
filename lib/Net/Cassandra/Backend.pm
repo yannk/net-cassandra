@@ -6,7 +6,7 @@
 require 5.6.0;
 use strict;
 use warnings;
-use Net::Cassandra::Backend::Thrift;
+use Thrift;
 
 use Net::Cassandra::Backend::Types;
 
@@ -14,18 +14,14 @@ use Net::Cassandra::Backend::Types;
 
 package Net::Cassandra::Backend::Cassandra_login_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_login_args->mk_accessors( qw( keyspace auth_request ) );
+Net::Cassandra::Backend::Cassandra_login_args->mk_accessors( qw( auth_request ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{auth_request} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{auth_request}) {
       $self->{auth_request} = $vals->{auth_request};
     }
@@ -47,18 +43,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{auth_request} = new Net::Cassandra::Backend::AuthenticationRequest();
         $xfer += $self->{auth_request}->read($input);
       } else {
@@ -77,13 +67,8 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_login_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{auth_request}) {
-    $xfer += $output->writeFieldBegin('auth_request', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('auth_request', TType::STRUCT, 1);
     $xfer += $self->{auth_request}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -131,25 +116,25 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^0$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{success});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{authnx} = new Net::Cassandra::Backend::AuthenticationException();
         $xfer += $self->{authnx}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{authzx} = new Net::Cassandra::Backend::AuthorizationException();
         $xfer += $self->{authzx}->read($input);
       } else {
@@ -169,18 +154,147 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_login_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::I32, 0);
+    $xfer += $output->writeFieldBegin('success', TType::I32, 0);
     $xfer += $output->writeI32($self->{success});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{authnx}) {
-    $xfer += $output->writeFieldBegin('authnx', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('authnx', TType::STRUCT, 1);
     $xfer += $self->{authnx}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{authzx}) {
-    $xfer += $output->writeFieldBegin('authzx', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('authzx', TType::STRUCT, 2);
     $xfer += $self->{authzx}->write($output);
+    $xfer += $output->writeFieldEnd();
+  }
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
+package Net::Cassandra::Backend::Cassandra_set_keyspace_args;
+use base qw(Class::Accessor);
+Net::Cassandra::Backend::Cassandra_set_keyspace_args->mk_accessors( qw( keyspace ) );
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  $self->{keyspace} = undef;
+  if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{keyspace}) {
+      $self->{keyspace} = $vals->{keyspace};
+    }
+  }
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'Cassandra_set_keyspace_args';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{keyspace});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('Cassandra_set_keyspace_args');
+  if (defined $self->{keyspace}) {
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
+    $xfer += $output->writeString($self->{keyspace});
+    $xfer += $output->writeFieldEnd();
+  }
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
+package Net::Cassandra::Backend::Cassandra_set_keyspace_result;
+use base qw(Class::Accessor);
+Net::Cassandra::Backend::Cassandra_set_keyspace_result->mk_accessors( qw( ) );
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  $self->{ire} = undef;
+  if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{ire}) {
+      $self->{ire} = $vals->{ire};
+    }
+  }
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'Cassandra_set_keyspace_result';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
+        $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
+        $xfer += $self->{ire}->read($input);
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('Cassandra_set_keyspace_result');
+  if (defined $self->{ire}) {
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
+    $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   $xfer += $output->writeFieldStop();
@@ -190,20 +304,16 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_get_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_get_args->mk_accessors( qw( keyspace key column_path consistency_level ) );
+Net::Cassandra::Backend::Cassandra_get_args->mk_accessors( qw( key column_path consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{key} = undef;
   $self->{column_path} = undef;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{key}) {
       $self->{key} = $vals->{key};
     }
@@ -231,31 +341,25 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{key});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{column_path} = new Net::Cassandra::Backend::ColumnPath();
         $xfer += $self->{column_path}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^3$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -273,23 +377,18 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_get_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{key}) {
-    $xfer += $output->writeFieldBegin('key', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('key', TType::STRING, 1);
     $xfer += $output->writeString($self->{key});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{column_path}) {
-    $xfer += $output->writeFieldBegin('column_path', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('column_path', TType::STRUCT, 2);
     $xfer += $self->{column_path}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 4);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 3);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -345,40 +444,40 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^0$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{success} = new Net::Cassandra::Backend::ColumnOrSuperColumn();
         $xfer += $self->{success}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{nfe} = new Net::Cassandra::Backend::NotFoundException();
         $xfer += $self->{nfe}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^4$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -398,27 +497,27 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_get_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::STRUCT, 0);
+    $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
     $xfer += $self->{success}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{nfe}) {
-    $xfer += $output->writeFieldBegin('nfe', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('nfe', TType::STRUCT, 2);
     $xfer += $self->{nfe}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 3);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 4);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 4);
     $xfer += $self->{te}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -429,21 +528,17 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_get_slice_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_get_slice_args->mk_accessors( qw( keyspace key column_parent predicate consistency_level ) );
+Net::Cassandra::Backend::Cassandra_get_slice_args->mk_accessors( qw( key column_parent predicate consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{key} = undef;
   $self->{column_parent} = undef;
   $self->{predicate} = undef;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{key}) {
       $self->{key} = $vals->{key};
     }
@@ -474,38 +569,32 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{key});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{column_parent} = new Net::Cassandra::Backend::ColumnParent();
         $xfer += $self->{column_parent}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{predicate} = new Net::Cassandra::Backend::SlicePredicate();
         $xfer += $self->{predicate}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^4$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -523,28 +612,23 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_get_slice_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{key}) {
-    $xfer += $output->writeFieldBegin('key', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('key', TType::STRING, 1);
     $xfer += $output->writeString($self->{key});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{column_parent}) {
-    $xfer += $output->writeFieldBegin('column_parent', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('column_parent', TType::STRUCT, 2);
     $xfer += $self->{column_parent}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{predicate}) {
-    $xfer += $output->writeFieldBegin('predicate', Net::Cassandra::Backend::TType::STRUCT, 4);
+    $xfer += $output->writeFieldBegin('predicate', TType::STRUCT, 3);
     $xfer += $self->{predicate}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 5);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 4);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -596,12 +680,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
+      /^0$/ && do{      if ($ftype == TType::LIST) {
         {
           my $_size51 = 0;
           $self->{success} = [];
@@ -620,21 +704,21 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -654,9 +738,9 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_get_slice_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::LIST, 0);
+    $xfer += $output->writeFieldBegin('success', TType::LIST, 0);
     {
-      $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{$self->{success}}));
+      $output->writeListBegin(TType::STRUCT, scalar(@{$self->{success}}));
       {
         foreach my $iter57 (@{$self->{success}}) 
         {
@@ -668,286 +752,17 @@ sub write {
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
-    $xfer += $self->{te}->write($output);
-    $xfer += $output->writeFieldEnd();
-  }
-  $xfer += $output->writeFieldStop();
-  $xfer += $output->writeStructEnd();
-  return $xfer;
-}
-
-package Net::Cassandra::Backend::Cassandra_multiget_args;
-use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_multiget_args->mk_accessors( qw( keyspace keys column_path consistency_level ) );
-
-sub new {
-  my $classname = shift;
-  my $self      = {};
-  my $vals      = shift || {};
-  $self->{keyspace} = undef;
-  $self->{keys} = undef;
-  $self->{column_path} = undef;
-  $self->{consistency_level} = 1;
-  if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
-    if (defined $vals->{keys}) {
-      $self->{keys} = $vals->{keys};
-    }
-    if (defined $vals->{column_path}) {
-      $self->{column_path} = $vals->{column_path};
-    }
-    if (defined $vals->{consistency_level}) {
-      $self->{consistency_level} = $vals->{consistency_level};
-    }
-  }
-  return bless ($self, $classname);
-}
-
-sub getName {
-  return 'Cassandra_multiget_args';
-}
-
-sub read {
-  my ($self, $input) = @_;
-  my $xfer  = 0;
-  my $fname;
-  my $ftype = 0;
-  my $fid   = 0;
-  $xfer += $input->readStructBegin(\$fname);
-  while (1) 
-  {
-    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
-      last;
-    }
-    SWITCH: for($fid)
-    {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
-        {
-          my $_size58 = 0;
-          $self->{keys} = [];
-          my $_etype61 = 0;
-          $xfer += $input->readListBegin(\$_etype61, \$_size58);
-          for (my $_i62 = 0; $_i62 < $_size58; ++$_i62)
-          {
-            my $elem63 = undef;
-            $xfer += $input->readString(\$elem63);
-            push(@{$self->{keys}},$elem63);
-          }
-          $xfer += $input->readListEnd();
-        }
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
-        $self->{column_path} = new Net::Cassandra::Backend::ColumnPath();
-        $xfer += $self->{column_path}->read($input);
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
-        $xfer += $input->readI32(\$self->{consistency_level});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-        $xfer += $input->skip($ftype);
-    }
-    $xfer += $input->readFieldEnd();
-  }
-  $xfer += $input->readStructEnd();
-  return $xfer;
-}
-
-sub write {
-  my ($self, $output) = @_;
-  my $xfer   = 0;
-  $xfer += $output->writeStructBegin('Cassandra_multiget_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{keys}) {
-    $xfer += $output->writeFieldBegin('keys', Net::Cassandra::Backend::TType::LIST, 2);
-    {
-      $output->writeListBegin(Net::Cassandra::Backend::TType::STRING, scalar(@{$self->{keys}}));
-      {
-        foreach my $iter64 (@{$self->{keys}}) 
-        {
-          $xfer += $output->writeString($iter64);
-        }
-      }
-      $output->writeListEnd();
-    }
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{column_path}) {
-    $xfer += $output->writeFieldBegin('column_path', Net::Cassandra::Backend::TType::STRUCT, 3);
-    $xfer += $self->{column_path}->write($output);
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 4);
-    $xfer += $output->writeI32($self->{consistency_level});
-    $xfer += $output->writeFieldEnd();
-  }
-  $xfer += $output->writeFieldStop();
-  $xfer += $output->writeStructEnd();
-  return $xfer;
-}
-
-package Net::Cassandra::Backend::Cassandra_multiget_result;
-use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_multiget_result->mk_accessors( qw( success ) );
-
-sub new {
-  my $classname = shift;
-  my $self      = {};
-  my $vals      = shift || {};
-  $self->{success} = undef;
-  $self->{ire} = undef;
-  $self->{ue} = undef;
-  $self->{te} = undef;
-  if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{success}) {
-      $self->{success} = $vals->{success};
-    }
-    if (defined $vals->{ire}) {
-      $self->{ire} = $vals->{ire};
-    }
-    if (defined $vals->{ue}) {
-      $self->{ue} = $vals->{ue};
-    }
-    if (defined $vals->{te}) {
-      $self->{te} = $vals->{te};
-    }
-  }
-  return bless ($self, $classname);
-}
-
-sub getName {
-  return 'Cassandra_multiget_result';
-}
-
-sub read {
-  my ($self, $input) = @_;
-  my $xfer  = 0;
-  my $fname;
-  my $ftype = 0;
-  my $fid   = 0;
-  $xfer += $input->readStructBegin(\$fname);
-  while (1) 
-  {
-    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
-      last;
-    }
-    SWITCH: for($fid)
-    {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::MAP) {
-        {
-          my $_size65 = 0;
-          $self->{success} = {};
-          my $_ktype66 = 0;
-          my $_vtype67 = 0;
-          $xfer += $input->readMapBegin(\$_ktype66, \$_vtype67, \$_size65);
-          for (my $_i69 = 0; $_i69 < $_size65; ++$_i69)
-          {
-            my $key70 = '';
-            my $val71 = new Net::Cassandra::Backend::ColumnOrSuperColumn();
-            $xfer += $input->readString(\$key70);
-            $val71 = new Net::Cassandra::Backend::ColumnOrSuperColumn();
-            $xfer += $val71->read($input);
-            $self->{success}->{$key70} = $val71;
-          }
-          $xfer += $input->readMapEnd();
-        }
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
-        $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
-        $xfer += $self->{ire}->read($input);
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
-        $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
-        $xfer += $self->{ue}->read($input);
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
-        $self->{te} = new Net::Cassandra::Backend::TimedOutException();
-        $xfer += $self->{te}->read($input);
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-        $xfer += $input->skip($ftype);
-    }
-    $xfer += $input->readFieldEnd();
-  }
-  $xfer += $input->readStructEnd();
-  return $xfer;
-}
-
-sub write {
-  my ($self, $output) = @_;
-  my $xfer   = 0;
-  $xfer += $output->writeStructBegin('Cassandra_multiget_result');
-  if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::MAP, 0);
-    {
-      $output->writeMapBegin(Net::Cassandra::Backend::TType::STRING, Net::Cassandra::Backend::TType::STRUCT, scalar(keys %{$self->{success}}));
-      {
-        while( my ($kiter72,$viter73) = each %{$self->{success}}) 
-        {
-          $xfer += $output->writeString($kiter72);
-          $xfer += ${viter73}->write($output);
-        }
-      }
-      $output->writeMapEnd();
-    }
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
-    $xfer += $self->{ire}->write($output);
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
-    $xfer += $self->{ue}->write($output);
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 3);
     $xfer += $self->{te}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -958,21 +773,17 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_multiget_slice_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_multiget_slice_args->mk_accessors( qw( keyspace keys column_parent predicate consistency_level ) );
+Net::Cassandra::Backend::Cassandra_multiget_slice_args->mk_accessors( qw( keys column_parent predicate consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{keys} = undef;
   $self->{column_parent} = undef;
   $self->{predicate} = undef;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{keys}) {
       $self->{keys} = $vals->{keys};
     }
@@ -1003,28 +814,22 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
+      /^1$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size74 = 0;
+          my $_size58 = 0;
           $self->{keys} = [];
-          my $_etype77 = 0;
-          $xfer += $input->readListBegin(\$_etype77, \$_size74);
-          for (my $_i78 = 0; $_i78 < $_size74; ++$_i78)
+          my $_etype61 = 0;
+          $xfer += $input->readListBegin(\$_etype61, \$_size58);
+          for (my $_i62 = 0; $_i62 < $_size58; ++$_i62)
           {
-            my $elem79 = undef;
-            $xfer += $input->readString(\$elem79);
-            push(@{$self->{keys}},$elem79);
+            my $elem63 = undef;
+            $xfer += $input->readString(\$elem63);
+            push(@{$self->{keys}},$elem63);
           }
           $xfer += $input->readListEnd();
         }
@@ -1032,21 +837,21 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{column_parent} = new Net::Cassandra::Backend::ColumnParent();
         $xfer += $self->{column_parent}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{predicate} = new Net::Cassandra::Backend::SlicePredicate();
         $xfer += $self->{predicate}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^4$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -1064,19 +869,14 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_multiget_slice_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{keys}) {
-    $xfer += $output->writeFieldBegin('keys', Net::Cassandra::Backend::TType::LIST, 2);
+    $xfer += $output->writeFieldBegin('keys', TType::LIST, 1);
     {
-      $output->writeListBegin(Net::Cassandra::Backend::TType::STRING, scalar(@{$self->{keys}}));
+      $output->writeListBegin(TType::STRING, scalar(@{$self->{keys}}));
       {
-        foreach my $iter80 (@{$self->{keys}}) 
+        foreach my $iter64 (@{$self->{keys}}) 
         {
-          $xfer += $output->writeString($iter80);
+          $xfer += $output->writeString($iter64);
         }
       }
       $output->writeListEnd();
@@ -1084,17 +884,17 @@ sub write {
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{column_parent}) {
-    $xfer += $output->writeFieldBegin('column_parent', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('column_parent', TType::STRUCT, 2);
     $xfer += $self->{column_parent}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{predicate}) {
-    $xfer += $output->writeFieldBegin('predicate', Net::Cassandra::Backend::TType::STRUCT, 4);
+    $xfer += $output->writeFieldBegin('predicate', TType::STRUCT, 3);
     $xfer += $self->{predicate}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 5);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 4);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -1146,38 +946,38 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::MAP) {
+      /^0$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size81 = 0;
+          my $_size65 = 0;
           $self->{success} = {};
-          my $_ktype82 = 0;
-          my $_vtype83 = 0;
-          $xfer += $input->readMapBegin(\$_ktype82, \$_vtype83, \$_size81);
-          for (my $_i85 = 0; $_i85 < $_size81; ++$_i85)
+          my $_ktype66 = 0;
+          my $_vtype67 = 0;
+          $xfer += $input->readMapBegin(\$_ktype66, \$_vtype67, \$_size65);
+          for (my $_i69 = 0; $_i69 < $_size65; ++$_i69)
           {
-            my $key86 = '';
-            my $val87 = [];
-            $xfer += $input->readString(\$key86);
+            my $key70 = '';
+            my $val71 = [];
+            $xfer += $input->readString(\$key70);
             {
-              my $_size88 = 0;
-              $val87 = [];
-              my $_etype91 = 0;
-              $xfer += $input->readListBegin(\$_etype91, \$_size88);
-              for (my $_i92 = 0; $_i92 < $_size88; ++$_i92)
+              my $_size72 = 0;
+              $val71 = [];
+              my $_etype75 = 0;
+              $xfer += $input->readListBegin(\$_etype75, \$_size72);
+              for (my $_i76 = 0; $_i76 < $_size72; ++$_i76)
               {
-                my $elem93 = undef;
-                $elem93 = new Net::Cassandra::Backend::ColumnOrSuperColumn();
-                $xfer += $elem93->read($input);
-                push(@{$val87},$elem93);
+                my $elem77 = undef;
+                $elem77 = new Net::Cassandra::Backend::ColumnOrSuperColumn();
+                $xfer += $elem77->read($input);
+                push(@{$val71},$elem77);
               }
               $xfer += $input->readListEnd();
             }
-            $self->{success}->{$key86} = $val87;
+            $self->{success}->{$key70} = $val71;
           }
           $xfer += $input->readMapEnd();
         }
@@ -1185,21 +985,21 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -1219,19 +1019,19 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_multiget_slice_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::MAP, 0);
+    $xfer += $output->writeFieldBegin('success', TType::MAP, 0);
     {
-      $output->writeMapBegin(Net::Cassandra::Backend::TType::STRING, Net::Cassandra::Backend::TType::LIST, scalar(keys %{$self->{success}}));
+      $output->writeMapBegin(TType::STRING, TType::LIST, scalar(keys %{$self->{success}}));
       {
-        while( my ($kiter94,$viter95) = each %{$self->{success}}) 
+        while( my ($kiter78,$viter79) = each %{$self->{success}}) 
         {
-          $xfer += $output->writeString($kiter94);
+          $xfer += $output->writeString($kiter78);
           {
-            $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{${viter95}}));
+            $output->writeListBegin(TType::STRUCT, scalar(@{${viter79}}));
             {
-              foreach my $iter96 (@{${viter95}}) 
+              foreach my $iter80 (@{${viter79}}) 
               {
-                $xfer += ${iter96}->write($output);
+                $xfer += ${iter80}->write($output);
               }
             }
             $output->writeListEnd();
@@ -1243,17 +1043,17 @@ sub write {
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 3);
     $xfer += $self->{te}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -1264,25 +1064,25 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_get_count_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_get_count_args->mk_accessors( qw( keyspace key column_parent consistency_level ) );
+Net::Cassandra::Backend::Cassandra_get_count_args->mk_accessors( qw( key column_parent predicate consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{key} = undef;
   $self->{column_parent} = undef;
+  $self->{predicate} = undef;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{key}) {
       $self->{key} = $vals->{key};
     }
     if (defined $vals->{column_parent}) {
       $self->{column_parent} = $vals->{column_parent};
+    }
+    if (defined $vals->{predicate}) {
+      $self->{predicate} = $vals->{predicate};
     }
     if (defined $vals->{consistency_level}) {
       $self->{consistency_level} = $vals->{consistency_level};
@@ -1305,31 +1105,32 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{key});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{column_parent} = new Net::Cassandra::Backend::ColumnParent();
         $xfer += $self->{column_parent}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
+        $self->{predicate} = new Net::Cassandra::Backend::SlicePredicate();
+        $xfer += $self->{predicate}->read($input);
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^4$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -1347,23 +1148,23 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_get_count_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{key}) {
-    $xfer += $output->writeFieldBegin('key', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('key', TType::STRING, 1);
     $xfer += $output->writeString($self->{key});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{column_parent}) {
-    $xfer += $output->writeFieldBegin('column_parent', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('column_parent', TType::STRUCT, 2);
     $xfer += $self->{column_parent}->write($output);
     $xfer += $output->writeFieldEnd();
   }
+  if (defined $self->{predicate}) {
+    $xfer += $output->writeFieldBegin('predicate', TType::STRUCT, 3);
+    $xfer += $self->{predicate}->write($output);
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 4);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 4);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -1415,32 +1216,32 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^0$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{success});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -1460,22 +1261,22 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_get_count_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::I32, 0);
+    $xfer += $output->writeFieldBegin('success', TType::I32, 0);
     $xfer += $output->writeI32($self->{success});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 3);
     $xfer += $self->{te}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -1484,39 +1285,31 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::Backend::Cassandra_get_range_slice_args;
+package Net::Cassandra::Backend::Cassandra_multiget_count_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_get_range_slice_args->mk_accessors( qw( keyspace column_parent predicate start_key finish_key row_count consistency_level ) );
+Net::Cassandra::Backend::Cassandra_multiget_count_args->mk_accessors( qw( keyspace keys column_parent predicate consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
   $self->{keyspace} = undef;
+  $self->{keys} = undef;
   $self->{column_parent} = undef;
   $self->{predicate} = undef;
-  $self->{start_key} = "";
-  $self->{finish_key} = "";
-  $self->{row_count} = 100;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
     if (defined $vals->{keyspace}) {
       $self->{keyspace} = $vals->{keyspace};
+    }
+    if (defined $vals->{keys}) {
+      $self->{keys} = $vals->{keys};
     }
     if (defined $vals->{column_parent}) {
       $self->{column_parent} = $vals->{column_parent};
     }
     if (defined $vals->{predicate}) {
       $self->{predicate} = $vals->{predicate};
-    }
-    if (defined $vals->{start_key}) {
-      $self->{start_key} = $vals->{start_key};
-    }
-    if (defined $vals->{finish_key}) {
-      $self->{finish_key} = $vals->{finish_key};
-    }
-    if (defined $vals->{row_count}) {
-      $self->{row_count} = $vals->{row_count};
     }
     if (defined $vals->{consistency_level}) {
       $self->{consistency_level} = $vals->{consistency_level};
@@ -1526,7 +1319,7 @@ sub new {
 }
 
 sub getName {
-  return 'Cassandra_get_range_slice_args';
+  return 'Cassandra_multiget_count_args';
 }
 
 sub read {
@@ -1539,50 +1332,50 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{keyspace});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::LIST) {
+        {
+          my $_size81 = 0;
+          $self->{keys} = [];
+          my $_etype84 = 0;
+          $xfer += $input->readListBegin(\$_etype84, \$_size81);
+          for (my $_i85 = 0; $_i85 < $_size81; ++$_i85)
+          {
+            my $elem86 = undef;
+            $xfer += $input->readString(\$elem86);
+            push(@{$self->{keys}},$elem86);
+          }
+          $xfer += $input->readListEnd();
+        }
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{column_parent} = new Net::Cassandra::Backend::ColumnParent();
         $xfer += $self->{column_parent}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^4$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{predicate} = new Net::Cassandra::Backend::SlicePredicate();
         $xfer += $self->{predicate}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{start_key});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{finish_key});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^6$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
-        $xfer += $input->readI32(\$self->{row_count});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^7$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^5$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -1599,39 +1392,38 @@ sub read {
 sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
-  $xfer += $output->writeStructBegin('Cassandra_get_range_slice_args');
+  $xfer += $output->writeStructBegin('Cassandra_multiget_count_args');
   if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
     $xfer += $output->writeString($self->{keyspace});
     $xfer += $output->writeFieldEnd();
   }
+  if (defined $self->{keys}) {
+    $xfer += $output->writeFieldBegin('keys', TType::LIST, 2);
+    {
+      $output->writeListBegin(TType::STRING, scalar(@{$self->{keys}}));
+      {
+        foreach my $iter87 (@{$self->{keys}}) 
+        {
+          $xfer += $output->writeString($iter87);
+        }
+      }
+      $output->writeListEnd();
+    }
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{column_parent}) {
-    $xfer += $output->writeFieldBegin('column_parent', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('column_parent', TType::STRUCT, 3);
     $xfer += $self->{column_parent}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{predicate}) {
-    $xfer += $output->writeFieldBegin('predicate', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('predicate', TType::STRUCT, 4);
     $xfer += $self->{predicate}->write($output);
     $xfer += $output->writeFieldEnd();
   }
-  if (defined $self->{start_key}) {
-    $xfer += $output->writeFieldBegin('start_key', Net::Cassandra::Backend::TType::STRING, 4);
-    $xfer += $output->writeString($self->{start_key});
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{finish_key}) {
-    $xfer += $output->writeFieldBegin('finish_key', Net::Cassandra::Backend::TType::STRING, 5);
-    $xfer += $output->writeString($self->{finish_key});
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{row_count}) {
-    $xfer += $output->writeFieldBegin('row_count', Net::Cassandra::Backend::TType::I32, 6);
-    $xfer += $output->writeI32($self->{row_count});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 7);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 5);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -1640,9 +1432,9 @@ sub write {
   return $xfer;
 }
 
-package Net::Cassandra::Backend::Cassandra_get_range_slice_result;
+package Net::Cassandra::Backend::Cassandra_multiget_count_result;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_get_range_slice_result->mk_accessors( qw( success ) );
+Net::Cassandra::Backend::Cassandra_multiget_count_result->mk_accessors( qw( success ) );
 
 sub new {
   my $classname = shift;
@@ -1670,7 +1462,7 @@ sub new {
 }
 
 sub getName {
-  return 'Cassandra_get_range_slice_result';
+  return 'Cassandra_multiget_count_result';
 }
 
 sub read {
@@ -1683,45 +1475,47 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
+      /^0$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size97 = 0;
-          $self->{success} = [];
-          my $_etype100 = 0;
-          $xfer += $input->readListBegin(\$_etype100, \$_size97);
-          for (my $_i101 = 0; $_i101 < $_size97; ++$_i101)
+          my $_size88 = 0;
+          $self->{success} = {};
+          my $_ktype89 = 0;
+          my $_vtype90 = 0;
+          $xfer += $input->readMapBegin(\$_ktype89, \$_vtype90, \$_size88);
+          for (my $_i92 = 0; $_i92 < $_size88; ++$_i92)
           {
-            my $elem102 = undef;
-            $elem102 = new Net::Cassandra::Backend::KeySlice();
-            $xfer += $elem102->read($input);
-            push(@{$self->{success}},$elem102);
+            my $key93 = '';
+            my $val94 = 0;
+            $xfer += $input->readString(\$key93);
+            $xfer += $input->readI32(\$val94);
+            $self->{success}->{$key93} = $val94;
           }
-          $xfer += $input->readListEnd();
+          $xfer += $input->readMapEnd();
         }
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -1739,33 +1533,34 @@ sub read {
 sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
-  $xfer += $output->writeStructBegin('Cassandra_get_range_slice_result');
+  $xfer += $output->writeStructBegin('Cassandra_multiget_count_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::LIST, 0);
+    $xfer += $output->writeFieldBegin('success', TType::MAP, 0);
     {
-      $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{$self->{success}}));
+      $output->writeMapBegin(TType::STRING, TType::I32, scalar(keys %{$self->{success}}));
       {
-        foreach my $iter103 (@{$self->{success}}) 
+        while( my ($kiter95,$viter96) = each %{$self->{success}}) 
         {
-          $xfer += ${iter103}->write($output);
+          $xfer += $output->writeString($kiter95);
+          $xfer += $output->writeI32($viter96);
         }
       }
-      $output->writeListEnd();
+      $output->writeMapEnd();
     }
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 3);
     $xfer += $self->{te}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -1776,21 +1571,17 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_get_range_slices_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_get_range_slices_args->mk_accessors( qw( keyspace column_parent predicate range consistency_level ) );
+Net::Cassandra::Backend::Cassandra_get_range_slices_args->mk_accessors( qw( column_parent predicate range consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{column_parent} = undef;
   $self->{predicate} = undef;
   $self->{range} = undef;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{column_parent}) {
       $self->{column_parent} = $vals->{column_parent};
     }
@@ -1821,39 +1612,33 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{column_parent} = new Net::Cassandra::Backend::ColumnParent();
         $xfer += $self->{column_parent}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{predicate} = new Net::Cassandra::Backend::SlicePredicate();
         $xfer += $self->{predicate}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{range} = new Net::Cassandra::Backend::KeyRange();
         $xfer += $self->{range}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^4$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -1871,28 +1656,23 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_get_range_slices_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{column_parent}) {
-    $xfer += $output->writeFieldBegin('column_parent', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('column_parent', TType::STRUCT, 1);
     $xfer += $self->{column_parent}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{predicate}) {
-    $xfer += $output->writeFieldBegin('predicate', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('predicate', TType::STRUCT, 2);
     $xfer += $self->{predicate}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{range}) {
-    $xfer += $output->writeFieldBegin('range', Net::Cassandra::Backend::TType::STRUCT, 4);
+    $xfer += $output->writeFieldBegin('range', TType::STRUCT, 3);
     $xfer += $self->{range}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 5);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 4);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -1944,23 +1724,23 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
+      /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size104 = 0;
+          my $_size97 = 0;
           $self->{success} = [];
-          my $_etype107 = 0;
-          $xfer += $input->readListBegin(\$_etype107, \$_size104);
-          for (my $_i108 = 0; $_i108 < $_size104; ++$_i108)
+          my $_etype100 = 0;
+          $xfer += $input->readListBegin(\$_etype100, \$_size97);
+          for (my $_i101 = 0; $_i101 < $_size97; ++$_i101)
           {
-            my $elem109 = undef;
-            $elem109 = new Net::Cassandra::Backend::KeySlice();
-            $xfer += $elem109->read($input);
-            push(@{$self->{success}},$elem109);
+            my $elem102 = undef;
+            $elem102 = new Net::Cassandra::Backend::KeySlice();
+            $xfer += $elem102->read($input);
+            push(@{$self->{success}},$elem102);
           }
           $xfer += $input->readListEnd();
         }
@@ -1968,21 +1748,21 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -2002,13 +1782,13 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_get_range_slices_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::LIST, 0);
+    $xfer += $output->writeFieldBegin('success', TType::LIST, 0);
     {
-      $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{$self->{success}}));
+      $output->writeListBegin(TType::STRUCT, scalar(@{$self->{success}}));
       {
-        foreach my $iter110 (@{$self->{success}}) 
+        foreach my $iter103 (@{$self->{success}}) 
         {
-          $xfer += ${iter110}->write($output);
+          $xfer += ${iter103}->write($output);
         }
       }
       $output->writeListEnd();
@@ -2016,17 +1796,17 @@ sub write {
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 3);
     $xfer += $self->{te}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -2037,33 +1817,25 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_insert_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_insert_args->mk_accessors( qw( keyspace key column_path value timestamp consistency_level ) );
+Net::Cassandra::Backend::Cassandra_insert_args->mk_accessors( qw( key column_parent column consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{key} = undef;
-  $self->{column_path} = undef;
-  $self->{value} = undef;
-  $self->{timestamp} = undef;
+  $self->{column_parent} = undef;
+  $self->{column} = undef;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{key}) {
       $self->{key} = $vals->{key};
     }
-    if (defined $vals->{column_path}) {
-      $self->{column_path} = $vals->{column_path};
+    if (defined $vals->{column_parent}) {
+      $self->{column_parent} = $vals->{column_parent};
     }
-    if (defined $vals->{value}) {
-      $self->{value} = $vals->{value};
-    }
-    if (defined $vals->{timestamp}) {
-      $self->{timestamp} = $vals->{timestamp};
+    if (defined $vals->{column}) {
+      $self->{column} = $vals->{column};
     }
     if (defined $vals->{consistency_level}) {
       $self->{consistency_level} = $vals->{consistency_level};
@@ -2086,43 +1858,32 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{key});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
-        $self->{column_path} = new Net::Cassandra::Backend::ColumnPath();
-        $xfer += $self->{column_path}->read($input);
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
+        $self->{column_parent} = new Net::Cassandra::Backend::ColumnParent();
+        $xfer += $self->{column_parent}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{value});
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
+        $self->{column} = new Net::Cassandra::Backend::Column();
+        $xfer += $self->{column}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I64) {
-        $xfer += $input->readI64(\$self->{timestamp});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^6$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^4$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -2140,33 +1901,23 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_insert_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{key}) {
-    $xfer += $output->writeFieldBegin('key', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('key', TType::STRING, 1);
     $xfer += $output->writeString($self->{key});
     $xfer += $output->writeFieldEnd();
   }
-  if (defined $self->{column_path}) {
-    $xfer += $output->writeFieldBegin('column_path', Net::Cassandra::Backend::TType::STRUCT, 3);
-    $xfer += $self->{column_path}->write($output);
+  if (defined $self->{column_parent}) {
+    $xfer += $output->writeFieldBegin('column_parent', TType::STRUCT, 2);
+    $xfer += $self->{column_parent}->write($output);
     $xfer += $output->writeFieldEnd();
   }
-  if (defined $self->{value}) {
-    $xfer += $output->writeFieldBegin('value', Net::Cassandra::Backend::TType::STRING, 4);
-    $xfer += $output->writeString($self->{value});
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{timestamp}) {
-    $xfer += $output->writeFieldBegin('timestamp', Net::Cassandra::Backend::TType::I64, 5);
-    $xfer += $output->writeI64($self->{timestamp});
+  if (defined $self->{column}) {
+    $xfer += $output->writeFieldBegin('column', TType::STRUCT, 3);
+    $xfer += $self->{column}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 6);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 4);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -2214,26 +1965,26 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -2253,270 +2004,17 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_insert_result');
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
-    $xfer += $self->{te}->write($output);
-    $xfer += $output->writeFieldEnd();
-  }
-  $xfer += $output->writeFieldStop();
-  $xfer += $output->writeStructEnd();
-  return $xfer;
-}
-
-package Net::Cassandra::Backend::Cassandra_batch_insert_args;
-use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_batch_insert_args->mk_accessors( qw( keyspace key cfmap consistency_level ) );
-
-sub new {
-  my $classname = shift;
-  my $self      = {};
-  my $vals      = shift || {};
-  $self->{keyspace} = undef;
-  $self->{key} = undef;
-  $self->{cfmap} = undef;
-  $self->{consistency_level} = 1;
-  if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
-    if (defined $vals->{key}) {
-      $self->{key} = $vals->{key};
-    }
-    if (defined $vals->{cfmap}) {
-      $self->{cfmap} = $vals->{cfmap};
-    }
-    if (defined $vals->{consistency_level}) {
-      $self->{consistency_level} = $vals->{consistency_level};
-    }
-  }
-  return bless ($self, $classname);
-}
-
-sub getName {
-  return 'Cassandra_batch_insert_args';
-}
-
-sub read {
-  my ($self, $input) = @_;
-  my $xfer  = 0;
-  my $fname;
-  my $ftype = 0;
-  my $fid   = 0;
-  $xfer += $input->readStructBegin(\$fname);
-  while (1) 
-  {
-    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
-      last;
-    }
-    SWITCH: for($fid)
-    {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{key});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::MAP) {
-        {
-          my $_size111 = 0;
-          $self->{cfmap} = {};
-          my $_ktype112 = 0;
-          my $_vtype113 = 0;
-          $xfer += $input->readMapBegin(\$_ktype112, \$_vtype113, \$_size111);
-          for (my $_i115 = 0; $_i115 < $_size111; ++$_i115)
-          {
-            my $key116 = '';
-            my $val117 = [];
-            $xfer += $input->readString(\$key116);
-            {
-              my $_size118 = 0;
-              $val117 = [];
-              my $_etype121 = 0;
-              $xfer += $input->readListBegin(\$_etype121, \$_size118);
-              for (my $_i122 = 0; $_i122 < $_size118; ++$_i122)
-              {
-                my $elem123 = undef;
-                $elem123 = new Net::Cassandra::Backend::ColumnOrSuperColumn();
-                $xfer += $elem123->read($input);
-                push(@{$val117},$elem123);
-              }
-              $xfer += $input->readListEnd();
-            }
-            $self->{cfmap}->{$key116} = $val117;
-          }
-          $xfer += $input->readMapEnd();
-        }
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
-        $xfer += $input->readI32(\$self->{consistency_level});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-        $xfer += $input->skip($ftype);
-    }
-    $xfer += $input->readFieldEnd();
-  }
-  $xfer += $input->readStructEnd();
-  return $xfer;
-}
-
-sub write {
-  my ($self, $output) = @_;
-  my $xfer   = 0;
-  $xfer += $output->writeStructBegin('Cassandra_batch_insert_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{key}) {
-    $xfer += $output->writeFieldBegin('key', Net::Cassandra::Backend::TType::STRING, 2);
-    $xfer += $output->writeString($self->{key});
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{cfmap}) {
-    $xfer += $output->writeFieldBegin('cfmap', Net::Cassandra::Backend::TType::MAP, 3);
-    {
-      $output->writeMapBegin(Net::Cassandra::Backend::TType::STRING, Net::Cassandra::Backend::TType::LIST, scalar(keys %{$self->{cfmap}}));
-      {
-        while( my ($kiter124,$viter125) = each %{$self->{cfmap}}) 
-        {
-          $xfer += $output->writeString($kiter124);
-          {
-            $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{${viter125}}));
-            {
-              foreach my $iter126 (@{${viter125}}) 
-              {
-                $xfer += ${iter126}->write($output);
-              }
-            }
-            $output->writeListEnd();
-          }
-        }
-      }
-      $output->writeMapEnd();
-    }
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 4);
-    $xfer += $output->writeI32($self->{consistency_level});
-    $xfer += $output->writeFieldEnd();
-  }
-  $xfer += $output->writeFieldStop();
-  $xfer += $output->writeStructEnd();
-  return $xfer;
-}
-
-package Net::Cassandra::Backend::Cassandra_batch_insert_result;
-use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_batch_insert_result->mk_accessors( qw( ) );
-
-sub new {
-  my $classname = shift;
-  my $self      = {};
-  my $vals      = shift || {};
-  $self->{ire} = undef;
-  $self->{ue} = undef;
-  $self->{te} = undef;
-  if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{ire}) {
-      $self->{ire} = $vals->{ire};
-    }
-    if (defined $vals->{ue}) {
-      $self->{ue} = $vals->{ue};
-    }
-    if (defined $vals->{te}) {
-      $self->{te} = $vals->{te};
-    }
-  }
-  return bless ($self, $classname);
-}
-
-sub getName {
-  return 'Cassandra_batch_insert_result';
-}
-
-sub read {
-  my ($self, $input) = @_;
-  my $xfer  = 0;
-  my $fname;
-  my $ftype = 0;
-  my $fid   = 0;
-  $xfer += $input->readStructBegin(\$fname);
-  while (1) 
-  {
-    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
-      last;
-    }
-    SWITCH: for($fid)
-    {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
-        $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
-        $xfer += $self->{ire}->read($input);
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
-        $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
-        $xfer += $self->{ue}->read($input);
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
-        $self->{te} = new Net::Cassandra::Backend::TimedOutException();
-        $xfer += $self->{te}->read($input);
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-        $xfer += $input->skip($ftype);
-    }
-    $xfer += $input->readFieldEnd();
-  }
-  $xfer += $input->readStructEnd();
-  return $xfer;
-}
-
-sub write {
-  my ($self, $output) = @_;
-  my $xfer   = 0;
-  $xfer += $output->writeStructBegin('Cassandra_batch_insert_result');
-  if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
-    $xfer += $self->{ire}->write($output);
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
-    $xfer += $self->{ue}->write($output);
-    $xfer += $output->writeFieldEnd();
-  }
-  if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 3);
     $xfer += $self->{te}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -2527,21 +2025,17 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_remove_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_remove_args->mk_accessors( qw( keyspace key column_path timestamp consistency_level ) );
+Net::Cassandra::Backend::Cassandra_remove_args->mk_accessors( qw( key column_path timestamp consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{key} = undef;
   $self->{column_path} = undef;
   $self->{timestamp} = undef;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{key}) {
       $self->{key} = $vals->{key};
     }
@@ -2572,37 +2066,31 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{key});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{column_path} = new Net::Cassandra::Backend::ColumnPath();
         $xfer += $self->{column_path}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^4$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I64) {
+      /^3$/ && do{      if ($ftype == TType::I64) {
         $xfer += $input->readI64(\$self->{timestamp});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^5$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^4$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -2620,28 +2108,23 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_remove_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{key}) {
-    $xfer += $output->writeFieldBegin('key', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('key', TType::STRING, 1);
     $xfer += $output->writeString($self->{key});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{column_path}) {
-    $xfer += $output->writeFieldBegin('column_path', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('column_path', TType::STRUCT, 2);
     $xfer += $self->{column_path}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{timestamp}) {
-    $xfer += $output->writeFieldBegin('timestamp', Net::Cassandra::Backend::TType::I64, 4);
+    $xfer += $output->writeFieldBegin('timestamp', TType::I64, 3);
     $xfer += $output->writeI64($self->{timestamp});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 5);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 4);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -2689,26 +2172,26 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -2728,17 +2211,17 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_remove_result');
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 3);
     $xfer += $self->{te}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -2749,19 +2232,15 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_batch_mutate_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_batch_mutate_args->mk_accessors( qw( keyspace mutation_map consistency_level ) );
+Net::Cassandra::Backend::Cassandra_batch_mutate_args->mk_accessors( qw( mutation_map consistency_level ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
-  $self->{keyspace} = undef;
   $self->{mutation_map} = undef;
   $self->{consistency_level} = 1;
   if (UNIVERSAL::isa($vals,'HASH')) {
-    if (defined $vals->{keyspace}) {
-      $self->{keyspace} = $vals->{keyspace};
-    }
     if (defined $vals->{mutation_map}) {
       $self->{mutation_map} = $vals->{mutation_map};
     }
@@ -2786,59 +2265,53 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
-        $xfer += $input->readString(\$self->{keyspace});
-      } else {
-        $xfer += $input->skip($ftype);
-      }
-      last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::MAP) {
+      /^1$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size127 = 0;
+          my $_size104 = 0;
           $self->{mutation_map} = {};
-          my $_ktype128 = 0;
-          my $_vtype129 = 0;
-          $xfer += $input->readMapBegin(\$_ktype128, \$_vtype129, \$_size127);
-          for (my $_i131 = 0; $_i131 < $_size127; ++$_i131)
+          my $_ktype105 = 0;
+          my $_vtype106 = 0;
+          $xfer += $input->readMapBegin(\$_ktype105, \$_vtype106, \$_size104);
+          for (my $_i108 = 0; $_i108 < $_size104; ++$_i108)
           {
-            my $key132 = '';
-            my $val133 = [];
-            $xfer += $input->readString(\$key132);
+            my $key109 = '';
+            my $val110 = [];
+            $xfer += $input->readString(\$key109);
             {
-              my $_size134 = 0;
-              $val133 = {};
-              my $_ktype135 = 0;
-              my $_vtype136 = 0;
-              $xfer += $input->readMapBegin(\$_ktype135, \$_vtype136, \$_size134);
-              for (my $_i138 = 0; $_i138 < $_size134; ++$_i138)
+              my $_size111 = 0;
+              $val110 = {};
+              my $_ktype112 = 0;
+              my $_vtype113 = 0;
+              $xfer += $input->readMapBegin(\$_ktype112, \$_vtype113, \$_size111);
+              for (my $_i115 = 0; $_i115 < $_size111; ++$_i115)
               {
-                my $key139 = '';
-                my $val140 = [];
-                $xfer += $input->readString(\$key139);
+                my $key116 = '';
+                my $val117 = [];
+                $xfer += $input->readString(\$key116);
                 {
-                  my $_size141 = 0;
-                  $val140 = [];
-                  my $_etype144 = 0;
-                  $xfer += $input->readListBegin(\$_etype144, \$_size141);
-                  for (my $_i145 = 0; $_i145 < $_size141; ++$_i145)
+                  my $_size118 = 0;
+                  $val117 = [];
+                  my $_etype121 = 0;
+                  $xfer += $input->readListBegin(\$_etype121, \$_size118);
+                  for (my $_i122 = 0; $_i122 < $_size118; ++$_i122)
                   {
-                    my $elem146 = undef;
-                    $elem146 = new Net::Cassandra::Backend::Mutation();
-                    $xfer += $elem146->read($input);
-                    push(@{$val140},$elem146);
+                    my $elem123 = undef;
+                    $elem123 = new Net::Cassandra::Backend::Mutation();
+                    $xfer += $elem123->read($input);
+                    push(@{$val117},$elem123);
                   }
                   $xfer += $input->readListEnd();
                 }
-                $val133->{$key139} = $val140;
+                $val110->{$key116} = $val117;
               }
               $xfer += $input->readMapEnd();
             }
-            $self->{mutation_map}->{$key132} = $val133;
+            $self->{mutation_map}->{$key109} = $val110;
           }
           $xfer += $input->readMapEnd();
         }
@@ -2846,7 +2319,7 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^2$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{consistency_level});
       } else {
         $xfer += $input->skip($ftype);
@@ -2864,31 +2337,26 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_batch_mutate_args');
-  if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
-    $xfer += $output->writeString($self->{keyspace});
-    $xfer += $output->writeFieldEnd();
-  }
   if (defined $self->{mutation_map}) {
-    $xfer += $output->writeFieldBegin('mutation_map', Net::Cassandra::Backend::TType::MAP, 2);
+    $xfer += $output->writeFieldBegin('mutation_map', TType::MAP, 1);
     {
-      $output->writeMapBegin(Net::Cassandra::Backend::TType::STRING, Net::Cassandra::Backend::TType::MAP, scalar(keys %{$self->{mutation_map}}));
+      $output->writeMapBegin(TType::STRING, TType::MAP, scalar(keys %{$self->{mutation_map}}));
       {
-        while( my ($kiter147,$viter148) = each %{$self->{mutation_map}}) 
+        while( my ($kiter124,$viter125) = each %{$self->{mutation_map}}) 
         {
-          $xfer += $output->writeString($kiter147);
+          $xfer += $output->writeString($kiter124);
           {
-            $output->writeMapBegin(Net::Cassandra::Backend::TType::STRING, Net::Cassandra::Backend::TType::LIST, scalar(keys %{${viter148}}));
+            $output->writeMapBegin(TType::STRING, TType::LIST, scalar(keys %{${viter125}}));
             {
-              while( my ($kiter149,$viter150) = each %{${viter148}}) 
+              while( my ($kiter126,$viter127) = each %{${viter125}}) 
               {
-                $xfer += $output->writeString($kiter149);
+                $xfer += $output->writeString($kiter126);
                 {
-                  $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{${viter150}}));
+                  $output->writeListBegin(TType::STRUCT, scalar(@{${viter127}}));
                   {
-                    foreach my $iter151 (@{${viter150}}) 
+                    foreach my $iter128 (@{${viter127}}) 
                     {
-                      $xfer += ${iter151}->write($output);
+                      $xfer += ${iter128}->write($output);
                     }
                   }
                   $output->writeListEnd();
@@ -2904,7 +2372,7 @@ sub write {
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{consistency_level}) {
-    $xfer += $output->writeFieldBegin('consistency_level', Net::Cassandra::Backend::TType::I32, 3);
+    $xfer += $output->writeFieldBegin('consistency_level', TType::I32, 2);
     $xfer += $output->writeI32($self->{consistency_level});
     $xfer += $output->writeFieldEnd();
   }
@@ -2952,26 +2420,26 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
         $xfer += $self->{ue}->read($input);
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^3$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{te} = new Net::Cassandra::Backend::TimedOutException();
         $xfer += $self->{te}->read($input);
       } else {
@@ -2991,18 +2459,350 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_batch_mutate_result');
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{ue}) {
-    $xfer += $output->writeFieldBegin('ue', Net::Cassandra::Backend::TType::STRUCT, 2);
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
     $xfer += $self->{ue}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{te}) {
-    $xfer += $output->writeFieldBegin('te', Net::Cassandra::Backend::TType::STRUCT, 3);
+    $xfer += $output->writeFieldBegin('te', TType::STRUCT, 3);
     $xfer += $self->{te}->write($output);
+    $xfer += $output->writeFieldEnd();
+  }
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
+package Net::Cassandra::Backend::Cassandra_truncate_args;
+use base qw(Class::Accessor);
+Net::Cassandra::Backend::Cassandra_truncate_args->mk_accessors( qw( keyspace cfname ) );
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  $self->{keyspace} = undef;
+  $self->{cfname} = undef;
+  if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{keyspace}) {
+      $self->{keyspace} = $vals->{keyspace};
+    }
+    if (defined $vals->{cfname}) {
+      $self->{cfname} = $vals->{cfname};
+    }
+  }
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'Cassandra_truncate_args';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{keyspace});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^2$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{cfname});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('Cassandra_truncate_args');
+  if (defined $self->{keyspace}) {
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
+    $xfer += $output->writeString($self->{keyspace});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{cfname}) {
+    $xfer += $output->writeFieldBegin('cfname', TType::STRING, 2);
+    $xfer += $output->writeString($self->{cfname});
+    $xfer += $output->writeFieldEnd();
+  }
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
+package Net::Cassandra::Backend::Cassandra_truncate_result;
+use base qw(Class::Accessor);
+Net::Cassandra::Backend::Cassandra_truncate_result->mk_accessors( qw( ) );
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  $self->{ire} = undef;
+  $self->{ue} = undef;
+  if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{ire}) {
+      $self->{ire} = $vals->{ire};
+    }
+    if (defined $vals->{ue}) {
+      $self->{ue} = $vals->{ue};
+    }
+  }
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'Cassandra_truncate_result';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
+        $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
+        $xfer += $self->{ire}->read($input);
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^2$/ && do{      if ($ftype == TType::STRUCT) {
+        $self->{ue} = new Net::Cassandra::Backend::UnavailableException();
+        $xfer += $self->{ue}->read($input);
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('Cassandra_truncate_result');
+  if (defined $self->{ire}) {
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
+    $xfer += $self->{ire}->write($output);
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{ue}) {
+    $xfer += $output->writeFieldBegin('ue', TType::STRUCT, 2);
+    $xfer += $self->{ue}->write($output);
+    $xfer += $output->writeFieldEnd();
+  }
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
+package Net::Cassandra::Backend::Cassandra_check_schema_agreement_args;
+use base qw(Class::Accessor);
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'Cassandra_check_schema_agreement_args';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('Cassandra_check_schema_agreement_args');
+  $xfer += $output->writeFieldStop();
+  $xfer += $output->writeStructEnd();
+  return $xfer;
+}
+
+package Net::Cassandra::Backend::Cassandra_check_schema_agreement_result;
+use base qw(Class::Accessor);
+Net::Cassandra::Backend::Cassandra_check_schema_agreement_result->mk_accessors( qw( success ) );
+
+sub new {
+  my $classname = shift;
+  my $self      = {};
+  my $vals      = shift || {};
+  $self->{success} = undef;
+  $self->{ire} = undef;
+  if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{success}) {
+      $self->{success} = $vals->{success};
+    }
+    if (defined $vals->{ire}) {
+      $self->{ire} = $vals->{ire};
+    }
+  }
+  return bless ($self, $classname);
+}
+
+sub getName {
+  return 'Cassandra_check_schema_agreement_result';
+}
+
+sub read {
+  my ($self, $input) = @_;
+  my $xfer  = 0;
+  my $fname;
+  my $ftype = 0;
+  my $fid   = 0;
+  $xfer += $input->readStructBegin(\$fname);
+  while (1) 
+  {
+    $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
+    if ($ftype == TType::STOP) {
+      last;
+    }
+    SWITCH: for($fid)
+    {
+      /^0$/ && do{      if ($ftype == TType::MAP) {
+        {
+          my $_size129 = 0;
+          $self->{success} = {};
+          my $_ktype130 = 0;
+          my $_vtype131 = 0;
+          $xfer += $input->readMapBegin(\$_ktype130, \$_vtype131, \$_size129);
+          for (my $_i133 = 0; $_i133 < $_size129; ++$_i133)
+          {
+            my $key134 = '';
+            my $val135 = [];
+            $xfer += $input->readString(\$key134);
+            {
+              my $_size136 = 0;
+              $val135 = [];
+              my $_etype139 = 0;
+              $xfer += $input->readListBegin(\$_etype139, \$_size136);
+              for (my $_i140 = 0; $_i140 < $_size136; ++$_i140)
+              {
+                my $elem141 = undef;
+                $xfer += $input->readString(\$elem141);
+                push(@{$val135},$elem141);
+              }
+              $xfer += $input->readListEnd();
+            }
+            $self->{success}->{$key134} = $val135;
+          }
+          $xfer += $input->readMapEnd();
+        }
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
+        $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
+        $xfer += $self->{ire}->read($input);
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+        $xfer += $input->skip($ftype);
+    }
+    $xfer += $input->readFieldEnd();
+  }
+  $xfer += $input->readStructEnd();
+  return $xfer;
+}
+
+sub write {
+  my ($self, $output) = @_;
+  my $xfer   = 0;
+  $xfer += $output->writeStructBegin('Cassandra_check_schema_agreement_result');
+  if (defined $self->{success}) {
+    $xfer += $output->writeFieldBegin('success', TType::MAP, 0);
+    {
+      $output->writeMapBegin(TType::STRING, TType::LIST, scalar(keys %{$self->{success}}));
+      {
+        while( my ($kiter142,$viter143) = each %{$self->{success}}) 
+        {
+          $xfer += $output->writeString($kiter142);
+          {
+            $output->writeListBegin(TType::STRING, scalar(@{${viter143}}));
+            {
+              foreach my $iter144 (@{${viter143}}) 
+              {
+                $xfer += $output->writeString($iter144);
+              }
+            }
+            $output->writeListEnd();
+          }
+        }
+      }
+      $output->writeMapEnd();
+    }
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{ire}) {
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
+    $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
   $xfer += $output->writeFieldStop();
@@ -3034,7 +2834,7 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
@@ -3087,22 +2887,22 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::SET) {
+      /^0$/ && do{      if ($ftype == TType::SET) {
         {
-          my $_size152 = 0;
+          my $_size145 = 0;
           $self->{success} = {};
-          my $_etype155 = 0;
-          $xfer += $input->readSetBegin(\$_etype155, \$_size152);
-          for (my $_i156 = 0; $_i156 < $_size152; ++$_i156)
+          my $_etype148 = 0;
+          $xfer += $input->readSetBegin(\$_etype148, \$_size145);
+          for (my $_i149 = 0; $_i149 < $_size145; ++$_i149)
           {
-            my $elem157 = undef;
-            $xfer += $input->readString(\$elem157);
-            $self->{success}->{$elem157} = 1;
+            my $elem150 = undef;
+            $xfer += $input->readString(\$elem150);
+            $self->{success}->{$elem150} = 1;
           }
           $xfer += $input->readSetEnd();
         }
@@ -3123,13 +2923,13 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_keyspaces_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::SET, 0);
+    $xfer += $output->writeFieldBegin('success', TType::SET, 0);
     {
-      $output->writeSetBegin(Net::Cassandra::Backend::TType::STRING, scalar(@{$self->{success}}));
+      $output->writeSetBegin(TType::STRING, scalar(@{$self->{success}}));
       {
-        foreach my $iter158 (@{$self->{success}})
+        foreach my $iter151 (@{$self->{success}})
         {
-          $xfer += $output->writeString($iter158);
+          $xfer += $output->writeString($iter151);
         }
       }
       $output->writeSetEnd();
@@ -3165,7 +2965,7 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
@@ -3218,12 +3018,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^0$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{success});
       } else {
         $xfer += $input->skip($ftype);
@@ -3242,7 +3042,7 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_cluster_name_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::STRING, 0);
+    $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
     $xfer += $output->writeString($self->{success});
     $xfer += $output->writeFieldEnd();
   }
@@ -3275,7 +3075,7 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
@@ -3328,12 +3128,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^0$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{success});
       } else {
         $xfer += $input->skip($ftype);
@@ -3352,7 +3152,7 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_version_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::STRING, 0);
+    $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
     $xfer += $output->writeString($self->{success});
     $xfer += $output->writeFieldEnd();
   }
@@ -3392,12 +3192,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{keyspace});
       } else {
         $xfer += $input->skip($ftype);
@@ -3416,7 +3216,7 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_ring_args');
   if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
     $xfer += $output->writeString($self->{keyspace});
     $xfer += $output->writeFieldEnd();
   }
@@ -3456,23 +3256,23 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
+      /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size159 = 0;
+          my $_size152 = 0;
           $self->{success} = [];
-          my $_etype162 = 0;
-          $xfer += $input->readListBegin(\$_etype162, \$_size159);
-          for (my $_i163 = 0; $_i163 < $_size159; ++$_i163)
+          my $_etype155 = 0;
+          $xfer += $input->readListBegin(\$_etype155, \$_size152);
+          for (my $_i156 = 0; $_i156 < $_size152; ++$_i156)
           {
-            my $elem164 = undef;
-            $elem164 = new Net::Cassandra::Backend::TokenRange();
-            $xfer += $elem164->read($input);
-            push(@{$self->{success}},$elem164);
+            my $elem157 = undef;
+            $elem157 = new Net::Cassandra::Backend::TokenRange();
+            $xfer += $elem157->read($input);
+            push(@{$self->{success}},$elem157);
           }
           $xfer += $input->readListEnd();
         }
@@ -3493,13 +3293,13 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_ring_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::LIST, 0);
+    $xfer += $output->writeFieldBegin('success', TType::LIST, 0);
     {
-      $output->writeListBegin(Net::Cassandra::Backend::TType::STRUCT, scalar(@{$self->{success}}));
+      $output->writeListBegin(TType::STRUCT, scalar(@{$self->{success}}));
       {
-        foreach my $iter165 (@{$self->{success}}) 
+        foreach my $iter158 (@{$self->{success}}) 
         {
-          $xfer += ${iter165}->write($output);
+          $xfer += ${iter158}->write($output);
         }
       }
       $output->writeListEnd();
@@ -3542,12 +3342,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{keyspace});
       } else {
         $xfer += $input->skip($ftype);
@@ -3566,7 +3366,7 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_keyspace_args');
   if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
     $xfer += $output->writeString($self->{keyspace});
     $xfer += $output->writeFieldEnd();
   }
@@ -3610,40 +3410,40 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::MAP) {
+      /^0$/ && do{      if ($ftype == TType::MAP) {
         {
-          my $_size166 = 0;
+          my $_size159 = 0;
           $self->{success} = {};
-          my $_ktype167 = 0;
-          my $_vtype168 = 0;
-          $xfer += $input->readMapBegin(\$_ktype167, \$_vtype168, \$_size166);
-          for (my $_i170 = 0; $_i170 < $_size166; ++$_i170)
+          my $_ktype160 = 0;
+          my $_vtype161 = 0;
+          $xfer += $input->readMapBegin(\$_ktype160, \$_vtype161, \$_size159);
+          for (my $_i163 = 0; $_i163 < $_size159; ++$_i163)
           {
-            my $key171 = '';
-            my $val172 = [];
-            $xfer += $input->readString(\$key171);
+            my $key164 = '';
+            my $val165 = [];
+            $xfer += $input->readString(\$key164);
             {
-              my $_size173 = 0;
-              $val172 = {};
-              my $_ktype174 = 0;
-              my $_vtype175 = 0;
-              $xfer += $input->readMapBegin(\$_ktype174, \$_vtype175, \$_size173);
-              for (my $_i177 = 0; $_i177 < $_size173; ++$_i177)
+              my $_size166 = 0;
+              $val165 = {};
+              my $_ktype167 = 0;
+              my $_vtype168 = 0;
+              $xfer += $input->readMapBegin(\$_ktype167, \$_vtype168, \$_size166);
+              for (my $_i170 = 0; $_i170 < $_size166; ++$_i170)
               {
-                my $key178 = '';
-                my $val179 = '';
-                $xfer += $input->readString(\$key178);
-                $xfer += $input->readString(\$val179);
-                $val172->{$key178} = $val179;
+                my $key171 = '';
+                my $val172 = '';
+                $xfer += $input->readString(\$key171);
+                $xfer += $input->readString(\$val172);
+                $val165->{$key171} = $val172;
               }
               $xfer += $input->readMapEnd();
             }
-            $self->{success}->{$key171} = $val172;
+            $self->{success}->{$key164} = $val165;
           }
           $xfer += $input->readMapEnd();
         }
@@ -3651,7 +3451,7 @@ sub read {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{nfe} = new Net::Cassandra::Backend::NotFoundException();
         $xfer += $self->{nfe}->read($input);
       } else {
@@ -3671,20 +3471,20 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_keyspace_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::MAP, 0);
+    $xfer += $output->writeFieldBegin('success', TType::MAP, 0);
     {
-      $output->writeMapBegin(Net::Cassandra::Backend::TType::STRING, Net::Cassandra::Backend::TType::MAP, scalar(keys %{$self->{success}}));
+      $output->writeMapBegin(TType::STRING, TType::MAP, scalar(keys %{$self->{success}}));
       {
-        while( my ($kiter180,$viter181) = each %{$self->{success}}) 
+        while( my ($kiter173,$viter174) = each %{$self->{success}}) 
         {
-          $xfer += $output->writeString($kiter180);
+          $xfer += $output->writeString($kiter173);
           {
-            $output->writeMapBegin(Net::Cassandra::Backend::TType::STRING, Net::Cassandra::Backend::TType::STRING, scalar(keys %{${viter181}}));
+            $output->writeMapBegin(TType::STRING, TType::STRING, scalar(keys %{${viter174}}));
             {
-              while( my ($kiter182,$viter183) = each %{${viter181}}) 
+              while( my ($kiter175,$viter176) = each %{${viter174}}) 
               {
-                $xfer += $output->writeString($kiter182);
-                $xfer += $output->writeString($viter183);
+                $xfer += $output->writeString($kiter175);
+                $xfer += $output->writeString($viter176);
               }
             }
             $output->writeMapEnd();
@@ -3696,7 +3496,7 @@ sub write {
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{nfe}) {
-    $xfer += $output->writeFieldBegin('nfe', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('nfe', TType::STRUCT, 1);
     $xfer += $self->{nfe}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -3707,16 +3507,24 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_describe_splits_args;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_describe_splits_args->mk_accessors( qw( start_token end_token keys_per_split ) );
+Net::Cassandra::Backend::Cassandra_describe_splits_args->mk_accessors( qw( keyspace cfName start_token end_token keys_per_split ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
+  $self->{keyspace} = undef;
+  $self->{cfName} = undef;
   $self->{start_token} = undef;
   $self->{end_token} = undef;
   $self->{keys_per_split} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{keyspace}) {
+      $self->{keyspace} = $vals->{keyspace};
+    }
+    if (defined $vals->{cfName}) {
+      $self->{cfName} = $vals->{cfName};
+    }
     if (defined $vals->{start_token}) {
       $self->{start_token} = $vals->{start_token};
     }
@@ -3744,24 +3552,36 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{keyspace});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^2$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{cfName});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^3$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{start_token});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^4$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{end_token});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::I32) {
+      /^5$/ && do{      if ($ftype == TType::I32) {
         $xfer += $input->readI32(\$self->{keys_per_split});
       } else {
         $xfer += $input->skip($ftype);
@@ -3779,18 +3599,28 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_splits_args');
+  if (defined $self->{keyspace}) {
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
+    $xfer += $output->writeString($self->{keyspace});
+    $xfer += $output->writeFieldEnd();
+  }
+  if (defined $self->{cfName}) {
+    $xfer += $output->writeFieldBegin('cfName', TType::STRING, 2);
+    $xfer += $output->writeString($self->{cfName});
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{start_token}) {
-    $xfer += $output->writeFieldBegin('start_token', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeFieldBegin('start_token', TType::STRING, 3);
     $xfer += $output->writeString($self->{start_token});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{end_token}) {
-    $xfer += $output->writeFieldBegin('end_token', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('end_token', TType::STRING, 4);
     $xfer += $output->writeString($self->{end_token});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{keys_per_split}) {
-    $xfer += $output->writeFieldBegin('keys_per_split', Net::Cassandra::Backend::TType::I32, 3);
+    $xfer += $output->writeFieldBegin('keys_per_split', TType::I32, 5);
     $xfer += $output->writeI32($self->{keys_per_split});
     $xfer += $output->writeFieldEnd();
   }
@@ -3830,22 +3660,22 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^0$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::LIST) {
+      /^0$/ && do{      if ($ftype == TType::LIST) {
         {
-          my $_size184 = 0;
+          my $_size177 = 0;
           $self->{success} = [];
-          my $_etype187 = 0;
-          $xfer += $input->readListBegin(\$_etype187, \$_size184);
-          for (my $_i188 = 0; $_i188 < $_size184; ++$_i188)
+          my $_etype180 = 0;
+          $xfer += $input->readListBegin(\$_etype180, \$_size177);
+          for (my $_i181 = 0; $_i181 < $_size177; ++$_i181)
           {
-            my $elem189 = undef;
-            $xfer += $input->readString(\$elem189);
-            push(@{$self->{success}},$elem189);
+            my $elem182 = undef;
+            $xfer += $input->readString(\$elem182);
+            push(@{$self->{success}},$elem182);
           }
           $xfer += $input->readListEnd();
         }
@@ -3866,13 +3696,13 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_describe_splits_result');
   if (defined $self->{success}) {
-    $xfer += $output->writeFieldBegin('success', Net::Cassandra::Backend::TType::LIST, 0);
+    $xfer += $output->writeFieldBegin('success', TType::LIST, 0);
     {
-      $output->writeListBegin(Net::Cassandra::Backend::TType::STRING, scalar(@{$self->{success}}));
+      $output->writeListBegin(TType::STRING, scalar(@{$self->{success}}));
       {
-        foreach my $iter190 (@{$self->{success}}) 
+        foreach my $iter183 (@{$self->{success}}) 
         {
-          $xfer += $output->writeString($iter190);
+          $xfer += $output->writeString($iter183);
         }
       }
       $output->writeListEnd();
@@ -3915,12 +3745,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{cf_def} = new Net::Cassandra::Backend::CfDef();
         $xfer += $self->{cf_def}->read($input);
       } else {
@@ -3940,7 +3770,7 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_add_column_family_args');
   if (defined $self->{cf_def}) {
-    $xfer += $output->writeFieldBegin('cf_def', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('cf_def', TType::STRUCT, 1);
     $xfer += $self->{cf_def}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -3951,14 +3781,18 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_system_add_column_family_result;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_system_add_column_family_result->mk_accessors( qw( ) );
+Net::Cassandra::Backend::Cassandra_system_add_column_family_result->mk_accessors( qw( success ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
+  $self->{success} = undef;
   $self->{ire} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{success}) {
+      $self->{success} = $vals->{success};
+    }
     if (defined $vals->{ire}) {
       $self->{ire} = $vals->{ire};
     }
@@ -3980,12 +3814,18 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^0$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{success});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
@@ -4004,8 +3844,13 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_add_column_family_result');
+  if (defined $self->{success}) {
+    $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+    $xfer += $output->writeString($self->{success});
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -4049,18 +3894,18 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{keyspace});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^2$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{column_family});
       } else {
         $xfer += $input->skip($ftype);
@@ -4079,12 +3924,12 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_drop_column_family_args');
   if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
     $xfer += $output->writeString($self->{keyspace});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{column_family}) {
-    $xfer += $output->writeFieldBegin('column_family', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('column_family', TType::STRING, 2);
     $xfer += $output->writeString($self->{column_family});
     $xfer += $output->writeFieldEnd();
   }
@@ -4095,14 +3940,18 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_system_drop_column_family_result;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_system_drop_column_family_result->mk_accessors( qw( ) );
+Net::Cassandra::Backend::Cassandra_system_drop_column_family_result->mk_accessors( qw( success ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
+  $self->{success} = undef;
   $self->{ire} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{success}) {
+      $self->{success} = $vals->{success};
+    }
     if (defined $vals->{ire}) {
       $self->{ire} = $vals->{ire};
     }
@@ -4124,12 +3973,18 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^0$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{success});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
@@ -4148,8 +4003,13 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_drop_column_family_result');
+  if (defined $self->{success}) {
+    $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+    $xfer += $output->writeString($self->{success});
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -4197,24 +4057,24 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{keyspace});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^2$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{old_name});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^3$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^3$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{new_name});
       } else {
         $xfer += $input->skip($ftype);
@@ -4233,17 +4093,17 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_rename_column_family_args');
   if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
     $xfer += $output->writeString($self->{keyspace});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{old_name}) {
-    $xfer += $output->writeFieldBegin('old_name', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('old_name', TType::STRING, 2);
     $xfer += $output->writeString($self->{old_name});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{new_name}) {
-    $xfer += $output->writeFieldBegin('new_name', Net::Cassandra::Backend::TType::STRING, 3);
+    $xfer += $output->writeFieldBegin('new_name', TType::STRING, 3);
     $xfer += $output->writeString($self->{new_name});
     $xfer += $output->writeFieldEnd();
   }
@@ -4254,14 +4114,18 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_system_rename_column_family_result;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_system_rename_column_family_result->mk_accessors( qw( ) );
+Net::Cassandra::Backend::Cassandra_system_rename_column_family_result->mk_accessors( qw( success ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
+  $self->{success} = undef;
   $self->{ire} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{success}) {
+      $self->{success} = $vals->{success};
+    }
     if (defined $vals->{ire}) {
       $self->{ire} = $vals->{ire};
     }
@@ -4283,12 +4147,18 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^0$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{success});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
@@ -4307,8 +4177,13 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_rename_column_family_result');
+  if (defined $self->{success}) {
+    $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+    $xfer += $output->writeString($self->{success});
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -4348,12 +4223,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ks_def} = new Net::Cassandra::Backend::KsDef();
         $xfer += $self->{ks_def}->read($input);
       } else {
@@ -4373,7 +4248,7 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_add_keyspace_args');
   if (defined $self->{ks_def}) {
-    $xfer += $output->writeFieldBegin('ks_def', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ks_def', TType::STRUCT, 1);
     $xfer += $self->{ks_def}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -4384,14 +4259,18 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_system_add_keyspace_result;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_system_add_keyspace_result->mk_accessors( qw( ) );
+Net::Cassandra::Backend::Cassandra_system_add_keyspace_result->mk_accessors( qw( success ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
+  $self->{success} = undef;
   $self->{ire} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{success}) {
+      $self->{success} = $vals->{success};
+    }
     if (defined $vals->{ire}) {
       $self->{ire} = $vals->{ire};
     }
@@ -4413,12 +4292,18 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^0$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{success});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
@@ -4437,8 +4322,13 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_add_keyspace_result');
+  if (defined $self->{success}) {
+    $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+    $xfer += $output->writeString($self->{success});
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -4478,12 +4368,12 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{keyspace});
       } else {
         $xfer += $input->skip($ftype);
@@ -4502,7 +4392,7 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_drop_keyspace_args');
   if (defined $self->{keyspace}) {
-    $xfer += $output->writeFieldBegin('keyspace', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeFieldBegin('keyspace', TType::STRING, 1);
     $xfer += $output->writeString($self->{keyspace});
     $xfer += $output->writeFieldEnd();
   }
@@ -4513,14 +4403,18 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_system_drop_keyspace_result;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_system_drop_keyspace_result->mk_accessors( qw( ) );
+Net::Cassandra::Backend::Cassandra_system_drop_keyspace_result->mk_accessors( qw( success ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
+  $self->{success} = undef;
   $self->{ire} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{success}) {
+      $self->{success} = $vals->{success};
+    }
     if (defined $vals->{ire}) {
       $self->{ire} = $vals->{ire};
     }
@@ -4542,12 +4436,18 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^0$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{success});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
@@ -4566,8 +4466,13 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_drop_keyspace_result');
+  if (defined $self->{success}) {
+    $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+    $xfer += $output->writeString($self->{success});
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -4611,18 +4516,18 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^1$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{old_name});
       } else {
         $xfer += $input->skip($ftype);
       }
       last; };
-      /^2$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRING) {
+      /^2$/ && do{      if ($ftype == TType::STRING) {
         $xfer += $input->readString(\$self->{new_name});
       } else {
         $xfer += $input->skip($ftype);
@@ -4641,12 +4546,12 @@ sub write {
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_rename_keyspace_args');
   if (defined $self->{old_name}) {
-    $xfer += $output->writeFieldBegin('old_name', Net::Cassandra::Backend::TType::STRING, 1);
+    $xfer += $output->writeFieldBegin('old_name', TType::STRING, 1);
     $xfer += $output->writeString($self->{old_name});
     $xfer += $output->writeFieldEnd();
   }
   if (defined $self->{new_name}) {
-    $xfer += $output->writeFieldBegin('new_name', Net::Cassandra::Backend::TType::STRING, 2);
+    $xfer += $output->writeFieldBegin('new_name', TType::STRING, 2);
     $xfer += $output->writeString($self->{new_name});
     $xfer += $output->writeFieldEnd();
   }
@@ -4657,14 +4562,18 @@ sub write {
 
 package Net::Cassandra::Backend::Cassandra_system_rename_keyspace_result;
 use base qw(Class::Accessor);
-Net::Cassandra::Backend::Cassandra_system_rename_keyspace_result->mk_accessors( qw( ) );
+Net::Cassandra::Backend::Cassandra_system_rename_keyspace_result->mk_accessors( qw( success ) );
 
 sub new {
   my $classname = shift;
   my $self      = {};
   my $vals      = shift || {};
+  $self->{success} = undef;
   $self->{ire} = undef;
   if (UNIVERSAL::isa($vals,'HASH')) {
+    if (defined $vals->{success}) {
+      $self->{success} = $vals->{success};
+    }
     if (defined $vals->{ire}) {
       $self->{ire} = $vals->{ire};
     }
@@ -4686,12 +4595,18 @@ sub read {
   while (1) 
   {
     $xfer += $input->readFieldBegin(\$fname, \$ftype, \$fid);
-    if ($ftype == Net::Cassandra::Backend::TType::STOP) {
+    if ($ftype == TType::STOP) {
       last;
     }
     SWITCH: for($fid)
     {
-      /^1$/ && do{      if ($ftype == Net::Cassandra::Backend::TType::STRUCT) {
+      /^0$/ && do{      if ($ftype == TType::STRING) {
+        $xfer += $input->readString(\$self->{success});
+      } else {
+        $xfer += $input->skip($ftype);
+      }
+      last; };
+      /^1$/ && do{      if ($ftype == TType::STRUCT) {
         $self->{ire} = new Net::Cassandra::Backend::InvalidRequestException();
         $xfer += $self->{ire}->read($input);
       } else {
@@ -4710,8 +4625,13 @@ sub write {
   my ($self, $output) = @_;
   my $xfer   = 0;
   $xfer += $output->writeStructBegin('Cassandra_system_rename_keyspace_result');
+  if (defined $self->{success}) {
+    $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+    $xfer += $output->writeString($self->{success});
+    $xfer += $output->writeFieldEnd();
+  }
   if (defined $self->{ire}) {
-    $xfer += $output->writeFieldBegin('ire', Net::Cassandra::Backend::TType::STRUCT, 1);
+    $xfer += $output->writeFieldBegin('ire', TType::STRUCT, 1);
     $xfer += $self->{ire}->write($output);
     $xfer += $output->writeFieldEnd();
   }
@@ -4727,15 +4647,20 @@ use strict;
 
 sub login{
   my $self = shift;
-  my $keyspace = shift;
   my $auth_request = shift;
+
+  die 'implement interface';
+}
+
+sub set_keyspace{
+  my $self = shift;
+  my $keyspace = shift;
 
   die 'implement interface';
 }
 
 sub get{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_path = shift;
   my $consistency_level = shift;
@@ -4745,7 +4670,6 @@ sub get{
 
 sub get_slice{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_parent = shift;
   my $predicate = shift;
@@ -4754,19 +4678,8 @@ sub get_slice{
   die 'implement interface';
 }
 
-sub multiget{
-  my $self = shift;
-  my $keyspace = shift;
-  my $keys = shift;
-  my $column_path = shift;
-  my $consistency_level = shift;
-
-  die 'implement interface';
-}
-
 sub multiget_slice{
   my $self = shift;
-  my $keyspace = shift;
   my $keys = shift;
   my $column_parent = shift;
   my $predicate = shift;
@@ -4777,22 +4690,20 @@ sub multiget_slice{
 
 sub get_count{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_parent = shift;
+  my $predicate = shift;
   my $consistency_level = shift;
 
   die 'implement interface';
 }
 
-sub get_range_slice{
+sub multiget_count{
   my $self = shift;
   my $keyspace = shift;
+  my $keys = shift;
   my $column_parent = shift;
   my $predicate = shift;
-  my $start_key = shift;
-  my $finish_key = shift;
-  my $row_count = shift;
   my $consistency_level = shift;
 
   die 'implement interface';
@@ -4800,7 +4711,6 @@ sub get_range_slice{
 
 sub get_range_slices{
   my $self = shift;
-  my $keyspace = shift;
   my $column_parent = shift;
   my $predicate = shift;
   my $range = shift;
@@ -4811,21 +4721,9 @@ sub get_range_slices{
 
 sub insert{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
-  my $column_path = shift;
-  my $value = shift;
-  my $timestamp = shift;
-  my $consistency_level = shift;
-
-  die 'implement interface';
-}
-
-sub batch_insert{
-  my $self = shift;
-  my $keyspace = shift;
-  my $key = shift;
-  my $cfmap = shift;
+  my $column_parent = shift;
+  my $column = shift;
   my $consistency_level = shift;
 
   die 'implement interface';
@@ -4833,7 +4731,6 @@ sub batch_insert{
 
 sub remove{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_path = shift;
   my $timestamp = shift;
@@ -4844,9 +4741,22 @@ sub remove{
 
 sub batch_mutate{
   my $self = shift;
-  my $keyspace = shift;
   my $mutation_map = shift;
   my $consistency_level = shift;
+
+  die 'implement interface';
+}
+
+sub truncate{
+  my $self = shift;
+  my $keyspace = shift;
+  my $cfname = shift;
+
+  die 'implement interface';
+}
+
+sub check_schema_agreement{
+  my $self = shift;
 
   die 'implement interface';
 }
@@ -4885,6 +4795,8 @@ sub describe_keyspace{
 
 sub describe_splits{
   my $self = shift;
+  my $keyspace = shift;
+  my $cfName = shift;
   my $start_token = shift;
   my $end_token = shift;
   my $keys_per_split = shift;
@@ -4953,127 +4865,117 @@ sub new {
 sub login{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $auth_request = ($request->{'auth_request'}) ? $request->{'auth_request'} : undef;
-  return $self->{impl}->login($keyspace, $auth_request);
+  return $self->{impl}->login($auth_request);
+}
+
+sub set_keyspace{
+  my ($self, $request) = @_;
+
+  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
+  return $self->{impl}->set_keyspace($keyspace);
 }
 
 sub get{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $key = ($request->{'key'}) ? $request->{'key'} : undef;
   my $column_path = ($request->{'column_path'}) ? $request->{'column_path'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->get($keyspace, $key, $column_path, $consistency_level);
+  return $self->{impl}->get($key, $column_path, $consistency_level);
 }
 
 sub get_slice{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $key = ($request->{'key'}) ? $request->{'key'} : undef;
   my $column_parent = ($request->{'column_parent'}) ? $request->{'column_parent'} : undef;
   my $predicate = ($request->{'predicate'}) ? $request->{'predicate'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->get_slice($keyspace, $key, $column_parent, $predicate, $consistency_level);
-}
-
-sub multiget{
-  my ($self, $request) = @_;
-
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
-  my $keys = ($request->{'keys'}) ? $request->{'keys'} : undef;
-  my $column_path = ($request->{'column_path'}) ? $request->{'column_path'} : undef;
-  my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->multiget($keyspace, $keys, $column_path, $consistency_level);
+  return $self->{impl}->get_slice($key, $column_parent, $predicate, $consistency_level);
 }
 
 sub multiget_slice{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $keys = ($request->{'keys'}) ? $request->{'keys'} : undef;
   my $column_parent = ($request->{'column_parent'}) ? $request->{'column_parent'} : undef;
   my $predicate = ($request->{'predicate'}) ? $request->{'predicate'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->multiget_slice($keyspace, $keys, $column_parent, $predicate, $consistency_level);
+  return $self->{impl}->multiget_slice($keys, $column_parent, $predicate, $consistency_level);
 }
 
 sub get_count{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $key = ($request->{'key'}) ? $request->{'key'} : undef;
   my $column_parent = ($request->{'column_parent'}) ? $request->{'column_parent'} : undef;
+  my $predicate = ($request->{'predicate'}) ? $request->{'predicate'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->get_count($keyspace, $key, $column_parent, $consistency_level);
+  return $self->{impl}->get_count($key, $column_parent, $predicate, $consistency_level);
 }
 
-sub get_range_slice{
+sub multiget_count{
   my ($self, $request) = @_;
 
   my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
+  my $keys = ($request->{'keys'}) ? $request->{'keys'} : undef;
   my $column_parent = ($request->{'column_parent'}) ? $request->{'column_parent'} : undef;
   my $predicate = ($request->{'predicate'}) ? $request->{'predicate'} : undef;
-  my $start_key = ($request->{'start_key'}) ? $request->{'start_key'} : undef;
-  my $finish_key = ($request->{'finish_key'}) ? $request->{'finish_key'} : undef;
-  my $row_count = ($request->{'row_count'}) ? $request->{'row_count'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->get_range_slice($keyspace, $column_parent, $predicate, $start_key, $finish_key, $row_count, $consistency_level);
+  return $self->{impl}->multiget_count($keyspace, $keys, $column_parent, $predicate, $consistency_level);
 }
 
 sub get_range_slices{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $column_parent = ($request->{'column_parent'}) ? $request->{'column_parent'} : undef;
   my $predicate = ($request->{'predicate'}) ? $request->{'predicate'} : undef;
   my $range = ($request->{'range'}) ? $request->{'range'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->get_range_slices($keyspace, $column_parent, $predicate, $range, $consistency_level);
+  return $self->{impl}->get_range_slices($column_parent, $predicate, $range, $consistency_level);
 }
 
 sub insert{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $key = ($request->{'key'}) ? $request->{'key'} : undef;
-  my $column_path = ($request->{'column_path'}) ? $request->{'column_path'} : undef;
-  my $value = ($request->{'value'}) ? $request->{'value'} : undef;
-  my $timestamp = ($request->{'timestamp'}) ? $request->{'timestamp'} : undef;
+  my $column_parent = ($request->{'column_parent'}) ? $request->{'column_parent'} : undef;
+  my $column = ($request->{'column'}) ? $request->{'column'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->insert($keyspace, $key, $column_path, $value, $timestamp, $consistency_level);
-}
-
-sub batch_insert{
-  my ($self, $request) = @_;
-
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
-  my $key = ($request->{'key'}) ? $request->{'key'} : undef;
-  my $cfmap = ($request->{'cfmap'}) ? $request->{'cfmap'} : undef;
-  my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->batch_insert($keyspace, $key, $cfmap, $consistency_level);
+  return $self->{impl}->insert($key, $column_parent, $column, $consistency_level);
 }
 
 sub remove{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $key = ($request->{'key'}) ? $request->{'key'} : undef;
   my $column_path = ($request->{'column_path'}) ? $request->{'column_path'} : undef;
   my $timestamp = ($request->{'timestamp'}) ? $request->{'timestamp'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->remove($keyspace, $key, $column_path, $timestamp, $consistency_level);
+  return $self->{impl}->remove($key, $column_path, $timestamp, $consistency_level);
 }
 
 sub batch_mutate{
   my ($self, $request) = @_;
 
-  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
   my $mutation_map = ($request->{'mutation_map'}) ? $request->{'mutation_map'} : undef;
   my $consistency_level = ($request->{'consistency_level'}) ? $request->{'consistency_level'} : undef;
-  return $self->{impl}->batch_mutate($keyspace, $mutation_map, $consistency_level);
+  return $self->{impl}->batch_mutate($mutation_map, $consistency_level);
+}
+
+sub truncate{
+  my ($self, $request) = @_;
+
+  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
+  my $cfname = ($request->{'cfname'}) ? $request->{'cfname'} : undef;
+  return $self->{impl}->truncate($keyspace, $cfname);
+}
+
+sub check_schema_agreement{
+  my ($self, $request) = @_;
+
+  return $self->{impl}->check_schema_agreement();
 }
 
 sub describe_keyspaces{
@@ -5111,10 +5013,12 @@ sub describe_keyspace{
 sub describe_splits{
   my ($self, $request) = @_;
 
+  my $keyspace = ($request->{'keyspace'}) ? $request->{'keyspace'} : undef;
+  my $cfName = ($request->{'cfName'}) ? $request->{'cfName'} : undef;
   my $start_token = ($request->{'start_token'}) ? $request->{'start_token'} : undef;
   my $end_token = ($request->{'end_token'}) ? $request->{'end_token'} : undef;
   my $keys_per_split = ($request->{'keys_per_split'}) ? $request->{'keys_per_split'} : undef;
-  return $self->{impl}->describe_splits($start_token, $end_token, $keys_per_split);
+  return $self->{impl}->describe_splits($keyspace, $cfName, $start_token, $end_token, $keys_per_split);
 }
 
 sub system_add_column_family{
@@ -5178,21 +5082,18 @@ sub new {
 
 sub login{
   my $self = shift;
-  my $keyspace = shift;
   my $auth_request = shift;
 
-    $self->send_login($keyspace, $auth_request);
+    $self->send_login($auth_request);
   return $self->recv_login();
 }
 
 sub send_login{
   my $self = shift;
-  my $keyspace = shift;
   my $auth_request = shift;
 
-  $self->{output}->writeMessageBegin('login', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('login', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_login_args();
-  $args->{keyspace} = $keyspace;
   $args->{auth_request} = $auth_request;
   $args->write($self->{output});
   $self->{output}->writeMessageEnd();
@@ -5207,8 +5108,8 @@ sub recv_login{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5228,27 +5129,67 @@ sub recv_login{
   }
   die "login failed: unknown result";
 }
-sub get{
+sub set_keyspace{
   my $self = shift;
   my $keyspace = shift;
+
+    $self->send_set_keyspace($keyspace);
+  $self->recv_set_keyspace();
+}
+
+sub send_set_keyspace{
+  my $self = shift;
+  my $keyspace = shift;
+
+  $self->{output}->writeMessageBegin('set_keyspace', TMessageType::CALL, $self->{seqid});
+  my $args = new Net::Cassandra::Backend::Cassandra_set_keyspace_args();
+  $args->{keyspace} = $keyspace;
+  $args->write($self->{output});
+  $self->{output}->writeMessageEnd();
+  $self->{output}->getTransport()->flush();
+}
+
+sub recv_set_keyspace{
+  my $self = shift;
+
+  my $rseqid = 0;
+  my $fname;
+  my $mtype = 0;
+
+  $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
+    $x->read($self->{input});
+    $self->{input}->readMessageEnd();
+    die $x;
+  }
+  my $result = new Net::Cassandra::Backend::Cassandra_set_keyspace_result();
+  $result->read($self->{input});
+  $self->{input}->readMessageEnd();
+
+  if (defined $result->{ire}) {
+    die $result->{ire};
+  }
+  return;
+}
+sub get{
+  my $self = shift;
   my $key = shift;
   my $column_path = shift;
   my $consistency_level = shift;
 
-    $self->send_get($keyspace, $key, $column_path, $consistency_level);
+    $self->send_get($key, $column_path, $consistency_level);
   return $self->recv_get();
 }
 
 sub send_get{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_path = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('get', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('get', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_get_args();
-  $args->{keyspace} = $keyspace;
   $args->{key} = $key;
   $args->{column_path} = $column_path;
   $args->{consistency_level} = $consistency_level;
@@ -5265,8 +5206,8 @@ sub recv_get{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5294,27 +5235,24 @@ sub recv_get{
 }
 sub get_slice{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_parent = shift;
   my $predicate = shift;
   my $consistency_level = shift;
 
-    $self->send_get_slice($keyspace, $key, $column_parent, $predicate, $consistency_level);
+    $self->send_get_slice($key, $column_parent, $predicate, $consistency_level);
   return $self->recv_get_slice();
 }
 
 sub send_get_slice{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_parent = shift;
   my $predicate = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('get_slice', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('get_slice', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_get_slice_args();
-  $args->{keyspace} = $keyspace;
   $args->{key} = $key;
   $args->{column_parent} = $column_parent;
   $args->{predicate} = $predicate;
@@ -5332,8 +5270,8 @@ sub recv_get_slice{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5356,90 +5294,26 @@ sub recv_get_slice{
   }
   die "get_slice failed: unknown result";
 }
-sub multiget{
-  my $self = shift;
-  my $keyspace = shift;
-  my $keys = shift;
-  my $column_path = shift;
-  my $consistency_level = shift;
-
-    $self->send_multiget($keyspace, $keys, $column_path, $consistency_level);
-  return $self->recv_multiget();
-}
-
-sub send_multiget{
-  my $self = shift;
-  my $keyspace = shift;
-  my $keys = shift;
-  my $column_path = shift;
-  my $consistency_level = shift;
-
-  $self->{output}->writeMessageBegin('multiget', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
-  my $args = new Net::Cassandra::Backend::Cassandra_multiget_args();
-  $args->{keyspace} = $keyspace;
-  $args->{keys} = $keys;
-  $args->{column_path} = $column_path;
-  $args->{consistency_level} = $consistency_level;
-  $args->write($self->{output});
-  $self->{output}->writeMessageEnd();
-  $self->{output}->getTransport()->flush();
-}
-
-sub recv_multiget{
-  my $self = shift;
-
-  my $rseqid = 0;
-  my $fname;
-  my $mtype = 0;
-
-  $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
-    $x->read($self->{input});
-    $self->{input}->readMessageEnd();
-    die $x;
-  }
-  my $result = new Net::Cassandra::Backend::Cassandra_multiget_result();
-  $result->read($self->{input});
-  $self->{input}->readMessageEnd();
-
-  if (defined $result->{success} ) {
-    return $result->{success};
-  }
-  if (defined $result->{ire}) {
-    die $result->{ire};
-  }
-  if (defined $result->{ue}) {
-    die $result->{ue};
-  }
-  if (defined $result->{te}) {
-    die $result->{te};
-  }
-  die "multiget failed: unknown result";
-}
 sub multiget_slice{
   my $self = shift;
-  my $keyspace = shift;
   my $keys = shift;
   my $column_parent = shift;
   my $predicate = shift;
   my $consistency_level = shift;
 
-    $self->send_multiget_slice($keyspace, $keys, $column_parent, $predicate, $consistency_level);
+    $self->send_multiget_slice($keys, $column_parent, $predicate, $consistency_level);
   return $self->recv_multiget_slice();
 }
 
 sub send_multiget_slice{
   my $self = shift;
-  my $keyspace = shift;
   my $keys = shift;
   my $column_parent = shift;
   my $predicate = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('multiget_slice', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('multiget_slice', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_multiget_slice_args();
-  $args->{keyspace} = $keyspace;
   $args->{keys} = $keys;
   $args->{column_parent} = $column_parent;
   $args->{predicate} = $predicate;
@@ -5457,8 +5331,8 @@ sub recv_multiget_slice{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5483,27 +5357,27 @@ sub recv_multiget_slice{
 }
 sub get_count{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_parent = shift;
+  my $predicate = shift;
   my $consistency_level = shift;
 
-    $self->send_get_count($keyspace, $key, $column_parent, $consistency_level);
+    $self->send_get_count($key, $column_parent, $predicate, $consistency_level);
   return $self->recv_get_count();
 }
 
 sub send_get_count{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_parent = shift;
+  my $predicate = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('get_count', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('get_count', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_get_count_args();
-  $args->{keyspace} = $keyspace;
   $args->{key} = $key;
   $args->{column_parent} = $column_parent;
+  $args->{predicate} = $predicate;
   $args->{consistency_level} = $consistency_level;
   $args->write($self->{output});
   $self->{output}->writeMessageEnd();
@@ -5518,8 +5392,8 @@ sub recv_get_count{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5542,45 +5416,39 @@ sub recv_get_count{
   }
   die "get_count failed: unknown result";
 }
-sub get_range_slice{
+sub multiget_count{
   my $self = shift;
   my $keyspace = shift;
+  my $keys = shift;
   my $column_parent = shift;
   my $predicate = shift;
-  my $start_key = shift;
-  my $finish_key = shift;
-  my $row_count = shift;
   my $consistency_level = shift;
 
-    $self->send_get_range_slice($keyspace, $column_parent, $predicate, $start_key, $finish_key, $row_count, $consistency_level);
-  return $self->recv_get_range_slice();
+    $self->send_multiget_count($keyspace, $keys, $column_parent, $predicate, $consistency_level);
+  return $self->recv_multiget_count();
 }
 
-sub send_get_range_slice{
+sub send_multiget_count{
   my $self = shift;
   my $keyspace = shift;
+  my $keys = shift;
   my $column_parent = shift;
   my $predicate = shift;
-  my $start_key = shift;
-  my $finish_key = shift;
-  my $row_count = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('get_range_slice', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
-  my $args = new Net::Cassandra::Backend::Cassandra_get_range_slice_args();
+  $self->{output}->writeMessageBegin('multiget_count', TMessageType::CALL, $self->{seqid});
+  my $args = new Net::Cassandra::Backend::Cassandra_multiget_count_args();
   $args->{keyspace} = $keyspace;
+  $args->{keys} = $keys;
   $args->{column_parent} = $column_parent;
   $args->{predicate} = $predicate;
-  $args->{start_key} = $start_key;
-  $args->{finish_key} = $finish_key;
-  $args->{row_count} = $row_count;
   $args->{consistency_level} = $consistency_level;
   $args->write($self->{output});
   $self->{output}->writeMessageEnd();
   $self->{output}->getTransport()->flush();
 }
 
-sub recv_get_range_slice{
+sub recv_multiget_count{
   my $self = shift;
 
   my $rseqid = 0;
@@ -5588,13 +5456,13 @@ sub recv_get_range_slice{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
   }
-  my $result = new Net::Cassandra::Backend::Cassandra_get_range_slice_result();
+  my $result = new Net::Cassandra::Backend::Cassandra_multiget_count_result();
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
@@ -5610,31 +5478,28 @@ sub recv_get_range_slice{
   if (defined $result->{te}) {
     die $result->{te};
   }
-  die "get_range_slice failed: unknown result";
+  die "multiget_count failed: unknown result";
 }
 sub get_range_slices{
   my $self = shift;
-  my $keyspace = shift;
   my $column_parent = shift;
   my $predicate = shift;
   my $range = shift;
   my $consistency_level = shift;
 
-    $self->send_get_range_slices($keyspace, $column_parent, $predicate, $range, $consistency_level);
+    $self->send_get_range_slices($column_parent, $predicate, $range, $consistency_level);
   return $self->recv_get_range_slices();
 }
 
 sub send_get_range_slices{
   my $self = shift;
-  my $keyspace = shift;
   my $column_parent = shift;
   my $predicate = shift;
   my $range = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('get_range_slices', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('get_range_slices', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_get_range_slices_args();
-  $args->{keyspace} = $keyspace;
   $args->{column_parent} = $column_parent;
   $args->{predicate} = $predicate;
   $args->{range} = $range;
@@ -5652,8 +5517,8 @@ sub recv_get_range_slices{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5678,33 +5543,27 @@ sub recv_get_range_slices{
 }
 sub insert{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
-  my $column_path = shift;
-  my $value = shift;
-  my $timestamp = shift;
+  my $column_parent = shift;
+  my $column = shift;
   my $consistency_level = shift;
 
-    $self->send_insert($keyspace, $key, $column_path, $value, $timestamp, $consistency_level);
+    $self->send_insert($key, $column_parent, $column, $consistency_level);
   $self->recv_insert();
 }
 
 sub send_insert{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
-  my $column_path = shift;
-  my $value = shift;
-  my $timestamp = shift;
+  my $column_parent = shift;
+  my $column = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('insert', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('insert', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_insert_args();
-  $args->{keyspace} = $keyspace;
   $args->{key} = $key;
-  $args->{column_path} = $column_path;
-  $args->{value} = $value;
-  $args->{timestamp} = $timestamp;
+  $args->{column_parent} = $column_parent;
+  $args->{column} = $column;
   $args->{consistency_level} = $consistency_level;
   $args->write($self->{output});
   $self->{output}->writeMessageEnd();
@@ -5719,8 +5578,8 @@ sub recv_insert{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5740,87 +5599,26 @@ sub recv_insert{
   }
   return;
 }
-sub batch_insert{
-  my $self = shift;
-  my $keyspace = shift;
-  my $key = shift;
-  my $cfmap = shift;
-  my $consistency_level = shift;
-
-    $self->send_batch_insert($keyspace, $key, $cfmap, $consistency_level);
-  $self->recv_batch_insert();
-}
-
-sub send_batch_insert{
-  my $self = shift;
-  my $keyspace = shift;
-  my $key = shift;
-  my $cfmap = shift;
-  my $consistency_level = shift;
-
-  $self->{output}->writeMessageBegin('batch_insert', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
-  my $args = new Net::Cassandra::Backend::Cassandra_batch_insert_args();
-  $args->{keyspace} = $keyspace;
-  $args->{key} = $key;
-  $args->{cfmap} = $cfmap;
-  $args->{consistency_level} = $consistency_level;
-  $args->write($self->{output});
-  $self->{output}->writeMessageEnd();
-  $self->{output}->getTransport()->flush();
-}
-
-sub recv_batch_insert{
-  my $self = shift;
-
-  my $rseqid = 0;
-  my $fname;
-  my $mtype = 0;
-
-  $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
-    $x->read($self->{input});
-    $self->{input}->readMessageEnd();
-    die $x;
-  }
-  my $result = new Net::Cassandra::Backend::Cassandra_batch_insert_result();
-  $result->read($self->{input});
-  $self->{input}->readMessageEnd();
-
-  if (defined $result->{ire}) {
-    die $result->{ire};
-  }
-  if (defined $result->{ue}) {
-    die $result->{ue};
-  }
-  if (defined $result->{te}) {
-    die $result->{te};
-  }
-  return;
-}
 sub remove{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_path = shift;
   my $timestamp = shift;
   my $consistency_level = shift;
 
-    $self->send_remove($keyspace, $key, $column_path, $timestamp, $consistency_level);
+    $self->send_remove($key, $column_path, $timestamp, $consistency_level);
   $self->recv_remove();
 }
 
 sub send_remove{
   my $self = shift;
-  my $keyspace = shift;
   my $key = shift;
   my $column_path = shift;
   my $timestamp = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('remove', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('remove', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_remove_args();
-  $args->{keyspace} = $keyspace;
   $args->{key} = $key;
   $args->{column_path} = $column_path;
   $args->{timestamp} = $timestamp;
@@ -5838,8 +5636,8 @@ sub recv_remove{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5861,23 +5659,20 @@ sub recv_remove{
 }
 sub batch_mutate{
   my $self = shift;
-  my $keyspace = shift;
   my $mutation_map = shift;
   my $consistency_level = shift;
 
-    $self->send_batch_mutate($keyspace, $mutation_map, $consistency_level);
+    $self->send_batch_mutate($mutation_map, $consistency_level);
   $self->recv_batch_mutate();
 }
 
 sub send_batch_mutate{
   my $self = shift;
-  my $keyspace = shift;
   my $mutation_map = shift;
   my $consistency_level = shift;
 
-  $self->{output}->writeMessageBegin('batch_mutate', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('batch_mutate', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_batch_mutate_args();
-  $args->{keyspace} = $keyspace;
   $args->{mutation_map} = $mutation_map;
   $args->{consistency_level} = $consistency_level;
   $args->write($self->{output});
@@ -5893,8 +5688,8 @@ sub recv_batch_mutate{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5914,6 +5709,98 @@ sub recv_batch_mutate{
   }
   return;
 }
+sub truncate{
+  my $self = shift;
+  my $keyspace = shift;
+  my $cfname = shift;
+
+    $self->send_truncate($keyspace, $cfname);
+  $self->recv_truncate();
+}
+
+sub send_truncate{
+  my $self = shift;
+  my $keyspace = shift;
+  my $cfname = shift;
+
+  $self->{output}->writeMessageBegin('truncate', TMessageType::CALL, $self->{seqid});
+  my $args = new Net::Cassandra::Backend::Cassandra_truncate_args();
+  $args->{keyspace} = $keyspace;
+  $args->{cfname} = $cfname;
+  $args->write($self->{output});
+  $self->{output}->writeMessageEnd();
+  $self->{output}->getTransport()->flush();
+}
+
+sub recv_truncate{
+  my $self = shift;
+
+  my $rseqid = 0;
+  my $fname;
+  my $mtype = 0;
+
+  $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
+    $x->read($self->{input});
+    $self->{input}->readMessageEnd();
+    die $x;
+  }
+  my $result = new Net::Cassandra::Backend::Cassandra_truncate_result();
+  $result->read($self->{input});
+  $self->{input}->readMessageEnd();
+
+  if (defined $result->{ire}) {
+    die $result->{ire};
+  }
+  if (defined $result->{ue}) {
+    die $result->{ue};
+  }
+  return;
+}
+sub check_schema_agreement{
+  my $self = shift;
+
+    $self->send_check_schema_agreement();
+  return $self->recv_check_schema_agreement();
+}
+
+sub send_check_schema_agreement{
+  my $self = shift;
+
+  $self->{output}->writeMessageBegin('check_schema_agreement', TMessageType::CALL, $self->{seqid});
+  my $args = new Net::Cassandra::Backend::Cassandra_check_schema_agreement_args();
+  $args->write($self->{output});
+  $self->{output}->writeMessageEnd();
+  $self->{output}->getTransport()->flush();
+}
+
+sub recv_check_schema_agreement{
+  my $self = shift;
+
+  my $rseqid = 0;
+  my $fname;
+  my $mtype = 0;
+
+  $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
+    $x->read($self->{input});
+    $self->{input}->readMessageEnd();
+    die $x;
+  }
+  my $result = new Net::Cassandra::Backend::Cassandra_check_schema_agreement_result();
+  $result->read($self->{input});
+  $self->{input}->readMessageEnd();
+
+  if (defined $result->{success} ) {
+    return $result->{success};
+  }
+  if (defined $result->{ire}) {
+    die $result->{ire};
+  }
+  die "check_schema_agreement failed: unknown result";
+}
 sub describe_keyspaces{
   my $self = shift;
 
@@ -5924,7 +5811,7 @@ sub describe_keyspaces{
 sub send_describe_keyspaces{
   my $self = shift;
 
-  $self->{output}->writeMessageBegin('describe_keyspaces', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('describe_keyspaces', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_describe_keyspaces_args();
   $args->write($self->{output});
   $self->{output}->writeMessageEnd();
@@ -5939,8 +5826,8 @@ sub recv_describe_keyspaces{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -5964,7 +5851,7 @@ sub describe_cluster_name{
 sub send_describe_cluster_name{
   my $self = shift;
 
-  $self->{output}->writeMessageBegin('describe_cluster_name', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('describe_cluster_name', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_describe_cluster_name_args();
   $args->write($self->{output});
   $self->{output}->writeMessageEnd();
@@ -5979,8 +5866,8 @@ sub recv_describe_cluster_name{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6004,7 +5891,7 @@ sub describe_version{
 sub send_describe_version{
   my $self = shift;
 
-  $self->{output}->writeMessageBegin('describe_version', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('describe_version', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_describe_version_args();
   $args->write($self->{output});
   $self->{output}->writeMessageEnd();
@@ -6019,8 +5906,8 @@ sub recv_describe_version{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6046,7 +5933,7 @@ sub send_describe_ring{
   my $self = shift;
   my $keyspace = shift;
 
-  $self->{output}->writeMessageBegin('describe_ring', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('describe_ring', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_describe_ring_args();
   $args->{keyspace} = $keyspace;
   $args->write($self->{output});
@@ -6062,8 +5949,8 @@ sub recv_describe_ring{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6089,7 +5976,7 @@ sub send_describe_keyspace{
   my $self = shift;
   my $keyspace = shift;
 
-  $self->{output}->writeMessageBegin('describe_keyspace', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('describe_keyspace', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_describe_keyspace_args();
   $args->{keyspace} = $keyspace;
   $args->write($self->{output});
@@ -6105,8 +5992,8 @@ sub recv_describe_keyspace{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6125,22 +6012,28 @@ sub recv_describe_keyspace{
 }
 sub describe_splits{
   my $self = shift;
+  my $keyspace = shift;
+  my $cfName = shift;
   my $start_token = shift;
   my $end_token = shift;
   my $keys_per_split = shift;
 
-    $self->send_describe_splits($start_token, $end_token, $keys_per_split);
+    $self->send_describe_splits($keyspace, $cfName, $start_token, $end_token, $keys_per_split);
   return $self->recv_describe_splits();
 }
 
 sub send_describe_splits{
   my $self = shift;
+  my $keyspace = shift;
+  my $cfName = shift;
   my $start_token = shift;
   my $end_token = shift;
   my $keys_per_split = shift;
 
-  $self->{output}->writeMessageBegin('describe_splits', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('describe_splits', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_describe_splits_args();
+  $args->{keyspace} = $keyspace;
+  $args->{cfName} = $cfName;
   $args->{start_token} = $start_token;
   $args->{end_token} = $end_token;
   $args->{keys_per_split} = $keys_per_split;
@@ -6157,8 +6050,8 @@ sub recv_describe_splits{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6177,14 +6070,14 @@ sub system_add_column_family{
   my $cf_def = shift;
 
     $self->send_system_add_column_family($cf_def);
-  $self->recv_system_add_column_family();
+  return $self->recv_system_add_column_family();
 }
 
 sub send_system_add_column_family{
   my $self = shift;
   my $cf_def = shift;
 
-  $self->{output}->writeMessageBegin('system_add_column_family', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('system_add_column_family', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_system_add_column_family_args();
   $args->{cf_def} = $cf_def;
   $args->write($self->{output});
@@ -6200,8 +6093,8 @@ sub recv_system_add_column_family{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6210,10 +6103,13 @@ sub recv_system_add_column_family{
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
+  if (defined $result->{success} ) {
+    return $result->{success};
+  }
   if (defined $result->{ire}) {
     die $result->{ire};
   }
-  return;
+  die "system_add_column_family failed: unknown result";
 }
 sub system_drop_column_family{
   my $self = shift;
@@ -6221,7 +6117,7 @@ sub system_drop_column_family{
   my $column_family = shift;
 
     $self->send_system_drop_column_family($keyspace, $column_family);
-  $self->recv_system_drop_column_family();
+  return $self->recv_system_drop_column_family();
 }
 
 sub send_system_drop_column_family{
@@ -6229,7 +6125,7 @@ sub send_system_drop_column_family{
   my $keyspace = shift;
   my $column_family = shift;
 
-  $self->{output}->writeMessageBegin('system_drop_column_family', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('system_drop_column_family', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_system_drop_column_family_args();
   $args->{keyspace} = $keyspace;
   $args->{column_family} = $column_family;
@@ -6246,8 +6142,8 @@ sub recv_system_drop_column_family{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6256,10 +6152,13 @@ sub recv_system_drop_column_family{
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
+  if (defined $result->{success} ) {
+    return $result->{success};
+  }
   if (defined $result->{ire}) {
     die $result->{ire};
   }
-  return;
+  die "system_drop_column_family failed: unknown result";
 }
 sub system_rename_column_family{
   my $self = shift;
@@ -6268,7 +6167,7 @@ sub system_rename_column_family{
   my $new_name = shift;
 
     $self->send_system_rename_column_family($keyspace, $old_name, $new_name);
-  $self->recv_system_rename_column_family();
+  return $self->recv_system_rename_column_family();
 }
 
 sub send_system_rename_column_family{
@@ -6277,7 +6176,7 @@ sub send_system_rename_column_family{
   my $old_name = shift;
   my $new_name = shift;
 
-  $self->{output}->writeMessageBegin('system_rename_column_family', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('system_rename_column_family', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_system_rename_column_family_args();
   $args->{keyspace} = $keyspace;
   $args->{old_name} = $old_name;
@@ -6295,8 +6194,8 @@ sub recv_system_rename_column_family{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6305,24 +6204,27 @@ sub recv_system_rename_column_family{
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
+  if (defined $result->{success} ) {
+    return $result->{success};
+  }
   if (defined $result->{ire}) {
     die $result->{ire};
   }
-  return;
+  die "system_rename_column_family failed: unknown result";
 }
 sub system_add_keyspace{
   my $self = shift;
   my $ks_def = shift;
 
     $self->send_system_add_keyspace($ks_def);
-  $self->recv_system_add_keyspace();
+  return $self->recv_system_add_keyspace();
 }
 
 sub send_system_add_keyspace{
   my $self = shift;
   my $ks_def = shift;
 
-  $self->{output}->writeMessageBegin('system_add_keyspace', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('system_add_keyspace', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_system_add_keyspace_args();
   $args->{ks_def} = $ks_def;
   $args->write($self->{output});
@@ -6338,8 +6240,8 @@ sub recv_system_add_keyspace{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6348,24 +6250,27 @@ sub recv_system_add_keyspace{
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
+  if (defined $result->{success} ) {
+    return $result->{success};
+  }
   if (defined $result->{ire}) {
     die $result->{ire};
   }
-  return;
+  die "system_add_keyspace failed: unknown result";
 }
 sub system_drop_keyspace{
   my $self = shift;
   my $keyspace = shift;
 
     $self->send_system_drop_keyspace($keyspace);
-  $self->recv_system_drop_keyspace();
+  return $self->recv_system_drop_keyspace();
 }
 
 sub send_system_drop_keyspace{
   my $self = shift;
   my $keyspace = shift;
 
-  $self->{output}->writeMessageBegin('system_drop_keyspace', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('system_drop_keyspace', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_system_drop_keyspace_args();
   $args->{keyspace} = $keyspace;
   $args->write($self->{output});
@@ -6381,8 +6286,8 @@ sub recv_system_drop_keyspace{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6391,10 +6296,13 @@ sub recv_system_drop_keyspace{
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
+  if (defined $result->{success} ) {
+    return $result->{success};
+  }
   if (defined $result->{ire}) {
     die $result->{ire};
   }
-  return;
+  die "system_drop_keyspace failed: unknown result";
 }
 sub system_rename_keyspace{
   my $self = shift;
@@ -6402,7 +6310,7 @@ sub system_rename_keyspace{
   my $new_name = shift;
 
     $self->send_system_rename_keyspace($old_name, $new_name);
-  $self->recv_system_rename_keyspace();
+  return $self->recv_system_rename_keyspace();
 }
 
 sub send_system_rename_keyspace{
@@ -6410,7 +6318,7 @@ sub send_system_rename_keyspace{
   my $old_name = shift;
   my $new_name = shift;
 
-  $self->{output}->writeMessageBegin('system_rename_keyspace', Net::Cassandra::Backend::TMessageType::CALL, $self->{seqid});
+  $self->{output}->writeMessageBegin('system_rename_keyspace', TMessageType::CALL, $self->{seqid});
   my $args = new Net::Cassandra::Backend::Cassandra_system_rename_keyspace_args();
   $args->{old_name} = $old_name;
   $args->{new_name} = $new_name;
@@ -6427,8 +6335,8 @@ sub recv_system_rename_keyspace{
   my $mtype = 0;
 
   $self->{input}->readMessageBegin(\$fname, \$mtype, \$rseqid);
-  if ($mtype == Net::Cassandra::Backend::TMessageType::EXCEPTION) {
-    my $x = new Net::Cassandra::Backend::TApplicationException();
+  if ($mtype == TMessageType::EXCEPTION) {
+    my $x = new TApplicationException();
     $x->read($self->{input});
     $self->{input}->readMessageEnd();
     die $x;
@@ -6437,10 +6345,13 @@ sub recv_system_rename_keyspace{
   $result->read($self->{input});
   $self->{input}->readMessageEnd();
 
+  if (defined $result->{success} ) {
+    return $result->{success};
+  }
   if (defined $result->{ire}) {
     die $result->{ire};
   }
-  return;
+  die "system_rename_keyspace failed: unknown result";
 }
 package Net::Cassandra::Backend::CassandraProcessor;
 
@@ -6463,10 +6374,10 @@ sub process {
     $input->readMessageBegin(\$fname, \$mtype, \$rseqid);
     my $methodname = 'process_'.$fname;
     if (!$self->can($methodname)) {
-      $input->skip(Net::Cassandra::Backend::TType::STRUCT);
+      $input->skip(TType::STRUCT);
       $input->readMessageEnd();
-      my $x = new Net::Cassandra::Backend::TApplicationException('Function '.$fname.' not implemented.', Net::Cassandra::Backend::TApplicationException::UNKNOWN_METHOD);
-      $output->writeMessageBegin($fname, Net::Cassandra::Backend::TMessageType::EXCEPTION, $rseqid);
+      my $x = new TApplicationException('Function '.$fname.' not implemented.', TApplicationException::UNKNOWN_METHOD);
+      $output->writeMessageBegin($fname, TMessageType::EXCEPTION, $rseqid);
       $x->write($output);
       $output->writeMessageEnd();
       $output->getTransport()->flush();
@@ -6483,13 +6394,30 @@ sub process_login {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_login_result();
     eval {
-      $result->{success} = $self->{handler}->login($args->keyspace, $args->auth_request);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::AuthenticationException') ){ 
+      $result->{success} = $self->{handler}->login($args->auth_request);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::AuthenticationException') ){ 
       $result->{authnx} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::AuthorizationException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::AuthorizationException') ){ 
       $result->{authzx} = $@;
     }
-    $output->writeMessageBegin('login', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('login', TMessageType::REPLY, $seqid);
+    $result->write($output);
+    $output->writeMessageEnd();
+    $output->getTransport()->flush();
+}
+
+sub process_set_keyspace {
+    my ($self, $seqid, $input, $output) = @_;
+    my $args = new Net::Cassandra::Backend::Cassandra_set_keyspace_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    my $result = new Net::Cassandra::Backend::Cassandra_set_keyspace_result();
+    eval {
+      $self->{handler}->set_keyspace($args->keyspace);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
+      $result->{ire} = $@;
+    }
+    $output->writeMessageBegin('set_keyspace', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6502,17 +6430,17 @@ sub process_get {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_get_result();
     eval {
-      $result->{success} = $self->{handler}->get($args->keyspace, $args->key, $args->column_path, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->get($args->key, $args->column_path, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::NotFoundException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::NotFoundException') ){ 
       $result->{nfe} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('get', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('get', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6525,36 +6453,15 @@ sub process_get_slice {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_get_slice_result();
     eval {
-      $result->{success} = $self->{handler}->get_slice($args->keyspace, $args->key, $args->column_parent, $args->predicate, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->get_slice($args->key, $args->column_parent, $args->predicate, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('get_slice', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
-    $result->write($output);
-    $output->writeMessageEnd();
-    $output->getTransport()->flush();
-}
-
-sub process_multiget {
-    my ($self, $seqid, $input, $output) = @_;
-    my $args = new Net::Cassandra::Backend::Cassandra_multiget_args();
-    $args->read($input);
-    $input->readMessageEnd();
-    my $result = new Net::Cassandra::Backend::Cassandra_multiget_result();
-    eval {
-      $result->{success} = $self->{handler}->multiget($args->keyspace, $args->keys, $args->column_path, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
-      $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
-      $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
-      $result->{te} = $@;
-    }
-    $output->writeMessageBegin('multiget', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('get_slice', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6567,15 +6474,15 @@ sub process_multiget_slice {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_multiget_slice_result();
     eval {
-      $result->{success} = $self->{handler}->multiget_slice($args->keyspace, $args->keys, $args->column_parent, $args->predicate, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->multiget_slice($args->keys, $args->column_parent, $args->predicate, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('multiget_slice', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('multiget_slice', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6588,36 +6495,36 @@ sub process_get_count {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_get_count_result();
     eval {
-      $result->{success} = $self->{handler}->get_count($args->keyspace, $args->key, $args->column_parent, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->get_count($args->key, $args->column_parent, $args->predicate, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('get_count', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('get_count', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
 }
 
-sub process_get_range_slice {
+sub process_multiget_count {
     my ($self, $seqid, $input, $output) = @_;
-    my $args = new Net::Cassandra::Backend::Cassandra_get_range_slice_args();
+    my $args = new Net::Cassandra::Backend::Cassandra_multiget_count_args();
     $args->read($input);
     $input->readMessageEnd();
-    my $result = new Net::Cassandra::Backend::Cassandra_get_range_slice_result();
+    my $result = new Net::Cassandra::Backend::Cassandra_multiget_count_result();
     eval {
-      $result->{success} = $self->{handler}->get_range_slice($args->keyspace, $args->column_parent, $args->predicate, $args->start_key, $args->finish_key, $args->row_count, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->multiget_count($args->keyspace, $args->keys, $args->column_parent, $args->predicate, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('get_range_slice', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('multiget_count', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6630,15 +6537,15 @@ sub process_get_range_slices {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_get_range_slices_result();
     eval {
-      $result->{success} = $self->{handler}->get_range_slices($args->keyspace, $args->column_parent, $args->predicate, $args->range, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->get_range_slices($args->column_parent, $args->predicate, $args->range, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('get_range_slices', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('get_range_slices', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6651,36 +6558,15 @@ sub process_insert {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_insert_result();
     eval {
-      $self->{handler}->insert($args->keyspace, $args->key, $args->column_path, $args->value, $args->timestamp, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $self->{handler}->insert($args->key, $args->column_parent, $args->column, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('insert', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
-    $result->write($output);
-    $output->writeMessageEnd();
-    $output->getTransport()->flush();
-}
-
-sub process_batch_insert {
-    my ($self, $seqid, $input, $output) = @_;
-    my $args = new Net::Cassandra::Backend::Cassandra_batch_insert_args();
-    $args->read($input);
-    $input->readMessageEnd();
-    my $result = new Net::Cassandra::Backend::Cassandra_batch_insert_result();
-    eval {
-      $self->{handler}->batch_insert($args->keyspace, $args->key, $args->cfmap, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
-      $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
-      $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
-      $result->{te} = $@;
-    }
-    $output->writeMessageBegin('batch_insert', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('insert', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6693,15 +6579,15 @@ sub process_remove {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_remove_result();
     eval {
-      $self->{handler}->remove($args->keyspace, $args->key, $args->column_path, $args->timestamp, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $self->{handler}->remove($args->key, $args->column_path, $args->timestamp, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('remove', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('remove', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6714,15 +6600,51 @@ sub process_batch_mutate {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_batch_mutate_result();
     eval {
-      $self->{handler}->batch_mutate($args->keyspace, $args->mutation_map, $args->consistency_level);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $self->{handler}->batch_mutate($args->mutation_map, $args->consistency_level);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::UnavailableException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
       $result->{ue} = $@;
-        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::TimedOutException') ){ 
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::TimedOutException') ){ 
       $result->{te} = $@;
     }
-    $output->writeMessageBegin('batch_mutate', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('batch_mutate', TMessageType::REPLY, $seqid);
+    $result->write($output);
+    $output->writeMessageEnd();
+    $output->getTransport()->flush();
+}
+
+sub process_truncate {
+    my ($self, $seqid, $input, $output) = @_;
+    my $args = new Net::Cassandra::Backend::Cassandra_truncate_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    my $result = new Net::Cassandra::Backend::Cassandra_truncate_result();
+    eval {
+      $self->{handler}->truncate($args->keyspace, $args->cfname);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
+      $result->{ire} = $@;
+        }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::UnavailableException') ){ 
+      $result->{ue} = $@;
+    }
+    $output->writeMessageBegin('truncate', TMessageType::REPLY, $seqid);
+    $result->write($output);
+    $output->writeMessageEnd();
+    $output->getTransport()->flush();
+}
+
+sub process_check_schema_agreement {
+    my ($self, $seqid, $input, $output) = @_;
+    my $args = new Net::Cassandra::Backend::Cassandra_check_schema_agreement_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    my $result = new Net::Cassandra::Backend::Cassandra_check_schema_agreement_result();
+    eval {
+      $result->{success} = $self->{handler}->check_schema_agreement();
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
+      $result->{ire} = $@;
+    }
+    $output->writeMessageBegin('check_schema_agreement', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6735,7 +6657,7 @@ sub process_describe_keyspaces {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_describe_keyspaces_result();
     $result->{success} = $self->{handler}->describe_keyspaces();
-    $output->writeMessageBegin('describe_keyspaces', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('describe_keyspaces', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6748,7 +6670,7 @@ sub process_describe_cluster_name {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_describe_cluster_name_result();
     $result->{success} = $self->{handler}->describe_cluster_name();
-    $output->writeMessageBegin('describe_cluster_name', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('describe_cluster_name', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6761,7 +6683,7 @@ sub process_describe_version {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_describe_version_result();
     $result->{success} = $self->{handler}->describe_version();
-    $output->writeMessageBegin('describe_version', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('describe_version', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6774,7 +6696,7 @@ sub process_describe_ring {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_describe_ring_result();
     $result->{success} = $self->{handler}->describe_ring($args->keyspace);
-    $output->writeMessageBegin('describe_ring', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('describe_ring', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6788,10 +6710,10 @@ sub process_describe_keyspace {
     my $result = new Net::Cassandra::Backend::Cassandra_describe_keyspace_result();
     eval {
       $result->{success} = $self->{handler}->describe_keyspace($args->keyspace);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::NotFoundException') ){ 
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::NotFoundException') ){ 
       $result->{nfe} = $@;
     }
-    $output->writeMessageBegin('describe_keyspace', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('describe_keyspace', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6803,8 +6725,8 @@ sub process_describe_splits {
     $args->read($input);
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_describe_splits_result();
-    $result->{success} = $self->{handler}->describe_splits($args->start_token, $args->end_token, $args->keys_per_split);
-    $output->writeMessageBegin('describe_splits', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $result->{success} = $self->{handler}->describe_splits($args->keyspace, $args->cfName, $args->start_token, $args->end_token, $args->keys_per_split);
+    $output->writeMessageBegin('describe_splits', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6817,11 +6739,11 @@ sub process_system_add_column_family {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_system_add_column_family_result();
     eval {
-      $self->{handler}->system_add_column_family($args->cf_def);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->system_add_column_family($args->cf_def);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
     }
-    $output->writeMessageBegin('system_add_column_family', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('system_add_column_family', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6834,11 +6756,11 @@ sub process_system_drop_column_family {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_system_drop_column_family_result();
     eval {
-      $self->{handler}->system_drop_column_family($args->keyspace, $args->column_family);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->system_drop_column_family($args->keyspace, $args->column_family);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
     }
-    $output->writeMessageBegin('system_drop_column_family', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('system_drop_column_family', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6851,11 +6773,11 @@ sub process_system_rename_column_family {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_system_rename_column_family_result();
     eval {
-      $self->{handler}->system_rename_column_family($args->keyspace, $args->old_name, $args->new_name);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->system_rename_column_family($args->keyspace, $args->old_name, $args->new_name);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
     }
-    $output->writeMessageBegin('system_rename_column_family', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('system_rename_column_family', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6868,11 +6790,11 @@ sub process_system_add_keyspace {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_system_add_keyspace_result();
     eval {
-      $self->{handler}->system_add_keyspace($args->ks_def);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->system_add_keyspace($args->ks_def);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
     }
-    $output->writeMessageBegin('system_add_keyspace', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('system_add_keyspace', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6885,11 +6807,11 @@ sub process_system_drop_keyspace {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_system_drop_keyspace_result();
     eval {
-      $self->{handler}->system_drop_keyspace($args->keyspace);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->system_drop_keyspace($args->keyspace);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
     }
-    $output->writeMessageBegin('system_drop_keyspace', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('system_drop_keyspace', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
@@ -6902,11 +6824,11 @@ sub process_system_rename_keyspace {
     $input->readMessageEnd();
     my $result = new Net::Cassandra::Backend::Cassandra_system_rename_keyspace_result();
     eval {
-      $self->{handler}->system_rename_keyspace($args->old_name, $args->new_name);
-    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::Cassandra::InvalidRequestException') ){ 
+      $result->{success} = $self->{handler}->system_rename_keyspace($args->old_name, $args->new_name);
+    }; if( UNIVERSAL::isa($@,'Net::Cassandra::Backend::InvalidRequestException') ){ 
       $result->{ire} = $@;
     }
-    $output->writeMessageBegin('system_rename_keyspace', Net::Cassandra::Backend::TMessageType::REPLY, $seqid);
+    $output->writeMessageBegin('system_rename_keyspace', TMessageType::REPLY, $seqid);
     $result->write($output);
     $output->writeMessageEnd();
     $output->getTransport()->flush();
