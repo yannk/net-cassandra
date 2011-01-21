@@ -10,6 +10,6 @@ use warnings;
 use Thrift;
 
 
-use constant VERSION => "6.1.0";
+use constant VERSION => "19.4.0";
 
 1;
